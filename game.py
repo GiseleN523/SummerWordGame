@@ -1,34 +1,81 @@
 import pygame
 from pygame.locals import *
 import random
+import math
+import word_generator
+
+"""
+TODO:
+- do we need better no-overlap?
+- different colored words? or different colored letters (by letter)
+- custom cursor?
+"""
+
 
 def main():
     pygame.init()
-
     # create a surface on screen that has the size of the computer screen
-    screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
-    screen.fill((255, 255, 255))
     pygame.display.set_caption("Our Game")
+    # screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((640, 360)) #test resolution
+    clock = pygame.time.Clock()
+
+    scr_width = screen.get_width()
+    scr_height = screen.get_height()
+    print("Screen dimensions ", scr_width, "x", scr_height)
     
-    font1 = pygame.font.SysFont('freesanbold.ttf', 50)
-    words=["Charles", "Charle", "Charlie"]
-    texts=[]
+    # === TUNABLE SETTINGS ===
+    font_size = int(min(scr_width, scr_height) / 10)
+    # print("Font size: ", font_size)
+    font_spacing = int(0.5 * font_size)  #TODO: make this use internal font spacing
+    drag_threshold = 0.5 * font_size
+    
+    font1 = pygame.font.SysFont('freesanbold.ttf', font_size)
+    words_raw =word_generator.getRandomWordList(15, 0, 30)
+    words = sorted(words_raw, key=len, reverse=True)
+    # print(words)
+
+    letters=[]
     rectangles=[]
     
-    for x in range(0, 100):
-        newText=font1.render(random.choice(words), True, (0, 0, 255))
-        newRect=newText.get_rect()
-        newRect.center=(random.randint(0, screen.get_width()), random.randint(0, screen.get_height()))
-        texts.append(newText)
-        rectangles.append(newRect)
-        
+    for word in words:
+        legal_pos=False
+        num_tries=0
+        while not legal_pos and num_tries<50:
+            num_tries=num_tries+1
+            xpos = random.randint(font_size, screen.get_width() - len(word) * font_spacing)
+            ypos = random.randint(font_size, screen.get_height() - font_size)
+            legal_pos=True
+            possible_word_rect = Rect(xpos, ypos, font_spacing*len(word), font_size * 2)
+            for rect in rectangles:
+                if rect.colliderect(possible_word_rect):
+                    legal_pos=False
+        if not legal_pos:
+            print("timed out")                
+            
+        # print(word, screen.get_width() - len(word) * font_spacing, screen.get_height() - font_size)
+
+        for letter in word:
+            # print(letter)
+            newText=font1.render(letter, True, (0, 0, 255))
+            newRect=newText.get_rect()
+            # newRect.center=(xpos, ypos + int(0.1 * random.randint(-font_size, font_size)))
+            newRect.center=(xpos, ypos)
+            letters.append(newText)
+            rectangles.append(newRect)
+            xpos += font_spacing
+
+
     running = True
-    
+    mouse_hold_down = False
+
+    drag_rect_id = -1 # -1 if not dragging anything, otherwise the id of the rect in the list
+
     while running:
+        # === INPUT ===
+        mousex, mousey = pygame.mouse.get_pos()
+        mouse_click_down = False
         # event handling, gets all event from the event queue
-        for i in range(0, len(texts)):
-            screen.blit(texts[i], rectangles[i])
-        pygame.display.update()
         for event in pygame.event.get():
             # only do something if the event is of type QUIT
             if event.type == pygame.QUIT:
@@ -39,9 +86,47 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     running = False
 
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mouse_click_down = True
+                mouse_hold_down = True
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                mouse_hold_down = False
 
+        # === GAME LOGIC and RENDER ===
+        # clear display
+        screen.fill((255, 255, 255))
 
+        if not mouse_hold_down:
+            drag_rect_id = -1 #drag nothing
 
+        if mouse_click_down:
+            nearest_rect = (-1, 0) # (rect id, distance from mouse)
+            for i in range(0, len(rectangles)):
+                rect = rectangles[i]
+                dist = math.hypot(rect.center[0] - mousex, rect.center[1] - mousey)
+                # print(i, "distance", dist)
+                if dist < nearest_rect[1] or nearest_rect[0] == -1:
+                    nearest_rect = (i, dist)
+            # print("mouse down nearest rect", nearest_rect)
+            # print(words[nearest_rect[0]])
+            if nearest_rect[1] < drag_threshold:
+                drag_rect_id = nearest_rect[0]
+
+        for i in range(0, len(rectangles)):
+            rect = rectangles[i]
+            # if rect.collidepoint(mousex, mousey) and mouse_click_down:
+            #     drag_rect_id = i
+
+            if i == drag_rect_id:
+                rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
+
+        for i in range(0, len(letters)):
+            screen.blit(letters[i], rectangles[i])
+
+        pygame.display.flip()
+
+        # limit frames per second
+        clock.tick(60)
 
 if __name__=="__main__":
     main()
