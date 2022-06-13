@@ -16,8 +16,8 @@ def main():
     pygame.init()
     # create a surface on screen that has the size of the computer screen
     pygame.display.set_caption("Our Game")
-    # screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
-    screen = pygame.display.set_mode((640, 360)) #test resolution
+    screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+    # screen = pygame.display.set_mode((640, 360)) #test resolution
     clock = pygame.time.Clock()
 
     scr_width = screen.get_width()
@@ -36,6 +36,7 @@ def main():
     # print(words)
 
     letters=[]
+    letters_hover=[]
     rectangles=[]
     
     for word in words:
@@ -57,11 +58,13 @@ def main():
 
         for letter in word:
             # print(letter)
-            newText=font1.render(letter, True, (0, 0, 255))
+            newText=font1.render(letter, True, (100, 100, 100))
+            newText_hover = font1.render(letter, True, (25, 25, 25))
             newRect=newText.get_rect()
             # newRect.center=(xpos, ypos + int(0.1 * random.randint(-font_size, font_size)))
             newRect.center=(xpos, ypos)
             letters.append(newText)
+            letters_hover.append(newText_hover)
             rectangles.append(newRect)
             xpos += font_spacing
 
@@ -69,7 +72,9 @@ def main():
     running = True
     mouse_hold_down = False
 
-    drag_rect_id = -1 # -1 if not dragging anything, otherwise the id of the rect in the list
+    # -1 if not dragging/hovering over anything, otherwise the id of the rect in the list
+    drag_rect_id = -1 
+    hover_rect_id = -1
 
     while running:
         # === INPUT ===
@@ -99,7 +104,7 @@ def main():
         if not mouse_hold_down:
             drag_rect_id = -1 #drag nothing
 
-        if mouse_click_down:
+            hover_rect_id = -1
             nearest_rect = (-1, 0) # (rect id, distance from mouse)
             for i in range(0, len(rectangles)):
                 rect = rectangles[i]
@@ -110,8 +115,11 @@ def main():
             # print("mouse down nearest rect", nearest_rect)
             # print(words[nearest_rect[0]])
             if nearest_rect[1] < drag_threshold:
-                drag_rect_id = nearest_rect[0]
+                hover_rect_id = nearest_rect[0]
 
+        if mouse_click_down and hover_rect_id != -1:
+            drag_rect_id = hover_rect_id
+            
         for i in range(0, len(rectangles)):
             rect = rectangles[i]
             # if rect.collidepoint(mousex, mousey) and mouse_click_down:
@@ -121,7 +129,10 @@ def main():
                 rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
 
         for i in range(0, len(letters)):
-            screen.blit(letters[i], rectangles[i])
+            if i == hover_rect_id:
+                screen.blit(letters_hover[i], rectangles[i])
+            else:
+                screen.blit(letters[i], rectangles[i])
 
         pygame.display.flip()
 
