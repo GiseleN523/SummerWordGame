@@ -2,11 +2,10 @@ import pygame
 from pygame.locals import *
 import random
 import math
-import word_generator
+import WordGenerator
 
 """
 TODO:
-- do we need better no-overlap?
 - different colored words? or different colored letters (by letter)
 - custom cursor?
 """
@@ -31,29 +30,29 @@ def main():
     drag_threshold = 0.5 * font_size
     
     font1 = pygame.font.SysFont('freesanbold.ttf', font_size)
-    words_raw =word_generator.getRandomWordList(15, 0, 30)
+    generator=WordGenerator.WordGenerator("wordlist.txt")
+    words_raw = generator.get_random_word_list(10)
     words = sorted(words_raw, key=len, reverse=True)
     # print(words)
 
     letters=[]
     letters_hover=[]
     rectangles=[]
-    
+        
     for word in words:
         legal_pos=False
         num_tries=0
-        while not legal_pos and num_tries<50:
-            num_tries=num_tries+1
+        while not legal_pos and num_tries<500:
             xpos = random.randint(font_size, screen.get_width() - len(word) * font_spacing)
             ypos = random.randint(font_size, screen.get_height() - font_size)
+            num_tries=num_tries+1
             legal_pos=True
-            possible_word_rect = Rect(xpos, ypos, font_spacing*len(word), font_size * 2)
+            possible_word_rect = Rect(xpos-(font_size), ypos-(font_size), (font_spacing*len(word))+(font_size*1.5), font_size*2)
             for rect in rectangles:
                 if rect.colliderect(possible_word_rect):
                     legal_pos=False
         if not legal_pos:
-            print("timed out")                
-            
+            print("timed out")            
         # print(word, screen.get_width() - len(word) * font_spacing, screen.get_height() - font_size)
 
         for letter in word:
@@ -67,8 +66,8 @@ def main():
             letters_hover.append(newText_hover)
             rectangles.append(newRect)
             xpos += font_spacing
-
-
+            
+    
     running = True
     mouse_hold_down = False
 
