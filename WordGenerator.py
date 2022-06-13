@@ -14,6 +14,12 @@ class WordGenerator:
             if len(word)>len(longest_word):
                 longest_word=word
         return len(longest_word)
+    
+    def is_valid_word(self, word):
+        for w in self.word_list:
+            if w.lower()==word.lower():
+                return True
+        return False
             
     def get_random_word_list(self, num_words, min_length=None, max_length=None): 
         random_word_list=[]

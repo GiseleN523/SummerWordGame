@@ -6,6 +6,10 @@ import WordGenerator
 
 """
 TODO:
+- detect when letter player has moved is no longer part of a word and whether the word is still valid
+- detect when player has added a letter to a word that makes it valid
+    - only react when the word makes a valid word? otherwise treat it as if it is just an extra gray letter?
+- have letters randomly move away (also determine whether new word is valid)
 - different colored words? or different colored letters (by letter)
 - custom cursor?
 """
@@ -38,6 +42,7 @@ def main():
     letters=[]
     letters_hover=[]
     rectangles=[]
+    word_graphics=[] #2D array with arrays that hold the letters in each word
         
     for word in words:
         legal_pos=False
@@ -55,17 +60,20 @@ def main():
             print("timed out")            
         # print(word, screen.get_width() - len(word) * font_spacing, screen.get_height() - font_size)
 
+        lets_in_word=[]
         for letter in word:
-            # print(letter)
+            print(letter)
             newText=font1.render(letter, True, (100, 100, 100))
             newText_hover = font1.render(letter, True, (25, 25, 25))
             newRect=newText.get_rect()
             # newRect.center=(xpos, ypos + int(0.1 * random.randint(-font_size, font_size)))
             newRect.center=(xpos, ypos)
             letters.append(newText)
+            lets_in_word.append(newText)
             letters_hover.append(newText_hover)
             rectangles.append(newRect)
             xpos += font_spacing
+        word_graphics.append(lets_in_word)
             
     
     running = True
@@ -101,6 +109,7 @@ def main():
         screen.fill((255, 255, 255))
 
         if not mouse_hold_down:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             drag_rect_id = -1 #drag nothing
 
             hover_rect_id = -1
@@ -117,6 +126,7 @@ def main():
                 hover_rect_id = nearest_rect[0]
 
         if mouse_click_down and hover_rect_id != -1:
+            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             drag_rect_id = hover_rect_id
             
         for i in range(0, len(rectangles)):
