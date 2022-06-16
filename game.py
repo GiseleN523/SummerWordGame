@@ -3,6 +3,7 @@ from pygame.locals import *
 import random
 import math
 import WordGenerator
+import Letter
 
 """
 TODO:
@@ -13,7 +14,6 @@ TODO:
 - different colored words? or different colored letters (by letter)
 - custom cursor?
 """
-
 
 def main():
     pygame.init()
@@ -29,22 +29,21 @@ def main():
     
     # === TUNABLE SETTINGS ===
     font_size = int(min(scr_width, scr_height) / 10)
+    Letter.font_size=font_size
     # print("Font size: ", font_size)
     font_spacing = int(0.5 * font_size)  #TODO: make this use internal font spacing
     drag_threshold = 0.5 * font_size
     
-    font1 = pygame.font.SysFont('freesanbold.ttf', font_size)
     generator=WordGenerator.WordGenerator("wordlist.txt")
     words_raw = generator.get_random_word_list(10)
-    words = sorted(words_raw, key=len, reverse=True)
-    # print(words)
+    # words = sorted(words_raw, key=len, reverse=True)
 
     letters=[]
-    letters_hover=[]
-    rectangles=[]
-    word_graphics=[] #2D array with arrays that hold the letters in each word
-        
-    for word in words:
+    #letters_hover=[]
+    #rectangles=[]
+    words=[] #2D array with arrays that hold the letters in each word -  does it make more sense to keep a list like this, or recalculate it each time?
+            
+    for word in words_raw:
         legal_pos=False
         num_tries=0
         while not legal_pos and num_tries<500:
@@ -53,8 +52,8 @@ def main():
             num_tries=num_tries+1
             legal_pos=True
             possible_word_rect = Rect(xpos-(font_size), ypos-(font_size), (font_spacing*len(word))+(font_size*1.5), font_size*2)
-            for rect in rectangles:
-                if rect.colliderect(possible_word_rect):
+            for letter in letters:
+                if letter.rect.colliderect(possible_word_rect):
                     legal_pos=False
         if not legal_pos:
             print("timed out")            
@@ -62,8 +61,10 @@ def main():
 
         lets_in_word=[]
         for letter in word:
-            print(letter)
-            newText=font1.render(letter, True, (100, 100, 100))
+            new_let=Letter.Letter(letter, xpos, ypos)
+            lets_in_word.append(new_let)
+            letters.append(new_let)
+            '''newText=font1.render(letter, True, (100, 100, 100))
             newText_hover = font1.render(letter, True, (25, 25, 25))
             newRect=newText.get_rect()
             # newRect.center=(xpos, ypos + int(0.1 * random.randint(-font_size, font_size)))
@@ -71,10 +72,10 @@ def main():
             letters.append(newText)
             lets_in_word.append(newText)
             letters_hover.append(newText_hover)
-            rectangles.append(newRect)
+            rectangles.append(newRect)'''
             xpos += font_spacing
-        word_graphics.append(lets_in_word)
-            
+        words.append(lets_in_word)
+                    
     
     running = True
     mouse_hold_down = False
@@ -114,8 +115,8 @@ def main():
 
             hover_rect_id = -1
             nearest_rect = (-1, 0) # (rect id, distance from mouse)
-            for i in range(0, len(rectangles)):
-                rect = rectangles[i]
+            for i in range(0, len(letters)):
+                rect = letters[i].rect
                 dist = math.hypot(rect.center[0] - mousex, rect.center[1] - mousey)
                 # print(i, "distance", dist)
                 if dist < nearest_rect[1] or nearest_rect[0] == -1:
@@ -129,8 +130,8 @@ def main():
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             drag_rect_id = hover_rect_id
             
-        for i in range(0, len(rectangles)):
-            rect = rectangles[i]
+        for i in range(0, len(letters)):
+            rect = letters[i].rect
             # if rect.collidepoint(mousex, mousey) and mouse_click_down:
             #     drag_rect_id = i
 
@@ -138,11 +139,14 @@ def main():
                 rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
 
         for i in range(0, len(letters)):
+            # for x in range(0, len(letters)):
+                # if x!=i and letters[x].isAdjacentTo(letters[i]):
+                    # print(letters[x].char," ",letters[i].char)
             if i == hover_rect_id:
-                screen.blit(letters_hover[i], rectangles[i])
+                screen.blit(letters[i].text_hover, letters[i].rect)
             else:
-                screen.blit(letters[i], rectangles[i])
-
+                screen.blit(letters[i].text, letters[i].rect)
+                
         pygame.display.flip()
 
         # limit frames per second
