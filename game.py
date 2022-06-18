@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 import random
 import math
+import time
 import WordGenerator
 import Letter
 
@@ -43,6 +44,9 @@ def main():
     #rectangles=[]
     words=[] #2D array with arrays that hold the letters in each word -  does it make more sense to keep a list like this, or recalculate it each time?
             
+
+    current_word_id = 0
+
     for word in words_raw:
         legal_pos=False
         num_tries=0
@@ -62,6 +66,7 @@ def main():
         lets_in_word=[]
         for letter in word:
             new_let=Letter.Letter(letter, xpos, ypos)
+            new_let.word_id = current_word_id
             lets_in_word.append(new_let)
             letters.append(new_let)
             '''newText=font1.render(letter, True, (100, 100, 100))
@@ -75,7 +80,13 @@ def main():
             rectangles.append(newRect)'''
             xpos += font_spacing
         words.append(lets_in_word)
-                    
+        current_word_id += 1
+
+
+
+
+    # print(connected_letters)
+
     
     running = True
     mouse_hold_down = False
@@ -116,8 +127,8 @@ def main():
             hover_rect_id = -1
             nearest_rect = (-1, 0) # (rect id, distance from mouse)
             for i in range(0, len(letters)):
-                rect = letters[i].rect
-                dist = math.hypot(rect.center[0] - mousex, rect.center[1] - mousey)
+                (x, y) = letters[i].coords()
+                dist = math.hypot(x - mousex, y - mousey)
                 # print(i, "distance", dist)
                 if dist < nearest_rect[1] or nearest_rect[0] == -1:
                     nearest_rect = (i, dist)
@@ -129,23 +140,40 @@ def main():
         if mouse_click_down and hover_rect_id != -1:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             drag_rect_id = hover_rect_id
-            
-        for i in range(0, len(letters)):
-            rect = letters[i].rect
-            # if rect.collidepoint(mousex, mousey) and mouse_click_down:
-            #     drag_rect_id = i
 
-            if i == drag_rect_id:
-                rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
+        # Update the dragged letter's pos, if we are dragging
+        if drag_rect_id >= 0:
+            rect = letters[drag_rect_id].rect
+            rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
 
+        connected_letters = []
         for i in range(0, len(letters)):
+
+            my_connected_letters = []
+            for j in range(0, len(letters)):
+                if j == i:
+                    pass
+                else:
+                    if letters[i].isAdjacentTo(letters[j]):
+                        my_connected_letters.append(j)
+                        # if not j in connected_letters:
+                            # connected_letters.append(j)
+            connected_letters.append(my_connected_letters)
+
+        # Blit the letters to screen
+        for i in range(0, len(letters)):
+            if i == hover_rect_id:
+                screen.blit(letters[i].text_hover, letters[i].rect)
+            # if i in connected_letters:
+            #     screen.blit(letters[i].text_red, letters[i].rect)
+            else:
+                word_id = letters[i].word_id
+                screen.blit(letters[i].with_color(word_id), letters[i].rect)
+
             # for x in range(0, len(letters)):
                 # if x!=i and letters[x].isAdjacentTo(letters[i]):
                     # print(letters[x].char," ",letters[i].char)
-            if i == hover_rect_id:
-                screen.blit(letters[i].text_hover, letters[i].rect)
-            else:
-                screen.blit(letters[i].text, letters[i].rect)
+
                 
         pygame.display.flip()
 
