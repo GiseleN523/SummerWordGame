@@ -179,19 +179,32 @@ def main():
 
         step2= time.perf_counter_ns()
 
-        all_strs = []
-        for string_ids in all_possible_strings:
-            my_str = ""
-            for id in string_ids:
-                my_str += letters[id].char
-            all_strs.append(my_str)
+        # all_strs = []
+        # for string_ids in all_possible_strings:
+        #     my_str = ""
+        #     for id in string_ids:
+        #         my_str += letters[id].char
+        #     all_strs.append(my_str)
 
-
+        possible_words = []
         possible_words_raw = []
-        for my_str in all_strs:
+        for i in range(0, len(all_possible_strings)):
+            string_ids = all_possible_strings[i]
+            my_str = ""
+            for index in string_ids:
+                my_str += letters[index].char
+
             #Do we want a lower letter bound for valid words?
             if generator.is_valid_word(my_str):
+                letters_in_word = map(lambda let_id: letters[let_id], string_ids)
+                possible_words.append(list(letters_in_word))
                 possible_words_raw.append(my_str)
+
+
+        step3 = time.perf_counter_ns()
+
+        # word_combo=get_best_combo([], possible_words)
+        
 
         end = time.perf_counter_ns()
 
@@ -200,11 +213,13 @@ def main():
 
         # print(all_possible_strings)
         # print(all_strs)
+        # print(possible_words)
         print(possible_words_raw)
         print("Took", (end-start) / 1_000_000, "ms")
         print("Step1 took", (step1-start) / 1_000_000, "ms")
         print("Step2 took", (step2-step1) / 1_000_000, "ms")
-        print("Step3 took", (end-step2) / 1_000_000, "ms")
+        print("Step3 took", (step3-step2) / 1_000_000, "ms")
+        print("Step4 took", (end-step3) / 1_000_000, "ms")
 
 
 
@@ -219,14 +234,7 @@ def main():
                 if generator.is_valid_word(word):
                     possible_words.append(word)
 
-        fewest_unused_letters=total_num_letters
-        best_word_combo=[]
-        for word in possible_words:
-            letters_remaining=total_num_letters-len(word)
-            # while 
-
-# )drow()nel-srettel_mun_latot=gniniameru
-            # while 
+        word_combo=get_best_combo([], possible_words)
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
@@ -268,7 +276,8 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
     new_tab = tab + " |"
 
     if len(valid_connections) == 0:
-        results.append(visited.copy())
+        #turn around
+        pass
     else:
         for letter_id in valid_connections:
             new_results = calculate_all_adjacent_strings(connection_graph, letter_id, visited, new_tab)
@@ -278,6 +287,32 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
 
     visited.remove(starting_point)
     return results
+    
+
+
+def get_best_combo(words_in_combo, possible_words):
+    print(words_in_combo)
+    print("it")
+    best_combo=words_in_combo
+    for word in possible_words:
+
+        if not word in words_in_combo:#check for repeat word since we don't remove words from possible_words when used
+            repeat_letter=False
+            for w in words_in_combo:
+                for let in w:
+                    if word.contains(let):
+                        repeat_letter=True
+            if repeat_letter==False:
+                best_combo_this_route=get_best_combo(words_in_combo.append(word), possible_words)
+                if num_unused_letters_in_combo(best_combo_this_route, possible_words)>num_unused_letters_in_combo(best_combo, possible_words):
+                    best_combo=best_combo_this_route
+    return best_combo
+        
+def num_unused_letters_in_combo(words, total_num_letters):
+    lets_in_combo=0
+    for word in words:
+        lets_in_combo=lets_in_combo+len(word)
+    return total_num_letters-lets_in_combo
 
 if __name__=="__main__":
     main()
