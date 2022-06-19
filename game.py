@@ -176,7 +176,8 @@ def main():
         fewest_unused_letters=total_num_letters
         best_word_combo=[]
         for word in possible_words:
-            letters
+            letters_remaining=total_num_letters-len(word)
+            while 
 
 # )drow()nel-srettel_mun_latot=gniniameru
             # while 
