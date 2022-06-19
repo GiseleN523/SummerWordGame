@@ -37,12 +37,16 @@ def main():
     
     generator=WordGenerator.WordGenerator("wordlist.txt")
     words_raw = generator.get_random_word_list(2, 1, 5)
+    
+    '''chars_raw=[]
+    for word in words_raw:
+        for char in word:
+            chars_raw.append(char)'''
+    
+    #print(generator.all_possible_words_for(chars_raw))
+    #total_possible_words=len(generator.all_possible_words_for(chars_raw))
 
     letters=[]
-    #letters_hover=[]
-    #rectangles=[]
-    words=[] #2D array with arrays that hold the letters in each word -  does it make more sense to keep a list like this, or recalculate it each time?
-            
 
     current_word_id = 0
 
@@ -75,7 +79,6 @@ def main():
             letters_hover.append(newText_hover)
             rectangles.append(newRect)'''
             xpos += font_spacing
-        words.append(lets_in_word)
         current_word_id += 1
 
 
@@ -226,6 +229,7 @@ def main():
                     possible_words.append(word)'''
 
         word_combo=get_best_combo([], possible_words)
+        
         w="best: "
         for word in word_combo:
             for let in word:
@@ -235,13 +239,22 @@ def main():
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
-            if i == hover_rect_id:
-                screen.blit(letters[i].text_hover, letters[i].rect)
+            #if i == hover_rect_id:
+                #screen.blit(letters[i].text_hover, letters[i].rect)
             # if i in connected_letters:
             #     screen.blit(letters[i].text_red, letters[i].rect)
-            else:
-                word_id = letters[i].word_id
+            #else:
+            word_id = letters[i].word_id
+            
+            in_word=False
+            for word in word_combo:
+                if letters[i] in word:
+                    in_word=True
+            
+            if in_word:
                 screen.blit(letters[i].with_color(word_id), letters[i].rect)
+            else:
+                screen.blit(letters[i].with_color(-1), letters[i].rect)
 
             # for x in range(0, len(letters)):
                 # if x!=i and letters[x].isAdjacentTo(letters[i]):

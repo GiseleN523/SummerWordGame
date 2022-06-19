@@ -6,12 +6,11 @@ class Letter:
     def __init__(self, char, x, y):
         self.char=char #string
         font = pygame.font.SysFont('freesanbold.ttf', font_size)
-        self.text=font.render(char, True, (100, 100, 100))
-        self.text_hover = font.render(char, True, (25, 25, 25))
-        self.rect=self.text.get_rect()
+        self.text_default = font.render(char, True, (100, 100, 100))
+        self.rect=self.text_default.get_rect()
         self.rect.center=(x, y)
 
-        self.text_red = font.render(char, True, (255, 0, 0))
+        #self.text_red = self.font.render(char, True, (255, 0, 0))
 
         self.colors = []
         self.colors.append((255, 0, 0))
@@ -26,14 +25,18 @@ class Letter:
             self.font_variations.append(font.render(char, True, color))
 
         self.word_id = 0
+        
+        self.color=(100, 100, 100)
 
     def coords(self):
         return self.rect.center
 
     def with_color(self, color):
-        return self.font_variations[color % len(self.colors)]
+        if color==-1:
+            return self.text_default
+        else:
+            return self.font_variations[color % len(self.colors)]
 
-     
     def isAdjacentTo(self, letter2):
         if abs(self.rect.x-letter2.rect.x)<(font_size*1) and abs(self.rect.y-letter2.rect.y)<(font_size*1):
             return True
