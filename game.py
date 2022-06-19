@@ -34,8 +34,10 @@ def main():
     # print("Font size: ", font_size)
     font_spacing = int(0.5 * font_size)  #TODO: make this use internal font spacing
     drag_threshold = 0.5 * font_size
+
+    SHORTEST_ALLOWED_WORD_LENGTH = 2
     
-    generator=WordGenerator.WordGenerator("wordlist.txt")
+    generator=WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
     words_raw = generator.get_random_word_list(2, 1, 5)
     
     '''chars_raw=[]
@@ -94,6 +96,11 @@ def main():
     drag_rect_id = -1 
     hover_rect_id = -1
 
+    time_between_explosions = 10 #seconds
+    last_explosion = time.perf_counter()
+
+    last_frame_word_combo = []
+
     while running:
         # === INPUT ===
         mousex, mousey = pygame.mouse.get_pos()
@@ -144,6 +151,23 @@ def main():
         if drag_rect_id >= 0:
             rect = letters[drag_rect_id].rect
             rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
+
+
+
+        now = time.perf_counter()
+        if now - last_explosion > time_between_explosions:
+            last_explosion = now
+
+            # Stop the game if there are no more words to explode
+            if len(last_frame_word_combo) == 0:
+                print("YOU LOSE")
+                return
+            
+            word_to_explode = last_frame_word_combo[0]
+            for letter_to_explode in word_to_explode:
+                xpos = random.randint(font_size, screen.get_width() - font_size)
+                ypos = random.randint(font_size, screen.get_height() - font_size)
+                letter_to_explode.rect.center = (xpos, ypos)
 
         
         start = time.perf_counter_ns()
@@ -196,46 +220,33 @@ def main():
 
 
         step3 = time.perf_counter_ns()
-
-        # word_combo=get_best_combo([], possible_words)
         
-
-        end = time.perf_counter_ns()
-
-        print(connected_letters)
-        print("\n")
-
-        # print(all_possible_strings)
-        # print(all_strs)
-        # print(possible_words)
-        print(possible_words_raw)
-        print("Took", (end-start) / 1_000_000, "ms")
-        print("Step1 took", (step1-start) / 1_000_000, "ms")
-        print("Step2 took", (step2-step1) / 1_000_000, "ms")
-        print("Step3 took", (step3-step2) / 1_000_000, "ms")
-        print("Step4 took", (end-step3) / 1_000_000, "ms")
-
-
-
-
-        #return
-
-        '''possible_words=[]
-        for adjacent_letters in connected_letters:
-            for adj_letter in adjacent_letters:
-                word="hello"
-                # some logic to traverse graph
-                if generator.is_valid_word(word):
-                    possible_words.append(word)'''
-
         word_combo=get_best_combo([], possible_words)
+        last_frame_word_combo = word_combo
         
         w="best: "
         for word in word_combo:
             for let in word:
                 w=w+let.char
             w=w+", "
+
+
+        end = time.perf_counter_ns()
+
+        """
+        print(connected_letters)
+        print("\n")
+        # print(all_possible_strings)
+        # print(all_strs)
+        # print(possible_words)
+        print(possible_words_raw)
         print(w)
+        print("Took", (end-start) / 1_000_000, "ms")
+        print("Step1 took", (step1-start) / 1_000_000, "ms")
+        print("Step2 took", (step2-step1) / 1_000_000, "ms")
+        print("Step3 took", (step3-step2) / 1_000_000, "ms")
+        print("Step4 took", (now-step3) / 1_000_000, "ms")
+        """
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
@@ -297,7 +308,6 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
 
     visited.remove(starting_point)
     return results
-    
 
 
 def get_best_combo(words_in_combo, possible_words):
