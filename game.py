@@ -38,7 +38,12 @@ def main():
     SHORTEST_ALLOWED_WORD_LENGTH = 2
     
     generator=WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
-    words_raw = generator.get_random_word_list(2)
+    words_raw = generator.get_random_word_list(2, 1, 5)
+
+    #Debug tools
+    debug_font_size = int(min(scr_width, scr_height) / 30)
+    debug_font = pygame.font.SysFont('freesanbold.ttf', debug_font_size)
+
     
     '''chars_raw=[]
     for word in words_raw:
@@ -110,6 +115,8 @@ def main():
 
     last_frame_word_combo = []
 
+    last_frame_time = time.perf_counter()
+
     while running:
         # === INPUT ===
         mousex, mousey = pygame.mouse.get_pos()
@@ -161,10 +168,14 @@ def main():
             rect = letters[drag_rect_id].rect
             rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
 
-
-
+        # Time
         now = time.perf_counter()
-        '''if now - last_explosion > time_between_explosions:
+        frame_duration_in_ms = (now - last_frame_time) * 1000
+        last_frame_time = now
+
+        #Explosion        
+        explosion_relative_time_left = 1 - (now - last_explosion) / time_between_explosions
+        if now - last_explosion > time_between_explosions:
             last_explosion = now
 
             # Stop the game if there are no more words to explode
@@ -176,7 +187,7 @@ def main():
             for letter_to_explode in word_to_explode:
                 xpos = random.randint(font_size, screen.get_width() - font_size)
                 ypos = random.randint(font_size, screen.get_height() - font_size)
-                letter_to_explode.rect.center = (xpos, ypos)'''
+                letter_to_explode.rect.center = (xpos, ypos)
 
         
         start = time.perf_counter_ns()
@@ -202,8 +213,8 @@ def main():
             possible_strings = calculate_all_adjacent_strings(connected_letters, letter_id, [], "")
             for pos_str in possible_strings:
                 all_possible_strings.append(pos_str)
-        
 
+    
         step2= time.perf_counter_ns()
 
         # all_strs = []
@@ -289,7 +300,16 @@ def main():
             # for x in range(0, len(letters)):
                 # if x!=i and letters[x].isAdjacentTo(letters[i]):
                     # print(letters[x].char," ",letters[i].char)
-                
+
+        # Blit the explosion timer to screen
+        explosion_candle_rect = Rect(0,0, explosion_relative_time_left * scr_width, 0.025*scr_height)
+        pygame.draw.rect(screen, (0,0,255), explosion_candle_rect)
+
+
+        # Display debug info
+        frame_duration_display = debug_font.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
+        screen.blit(frame_duration_display,(0,scr_height - debug_font_size))
+
         pygame.display.flip()
 
         # limit frames per second
