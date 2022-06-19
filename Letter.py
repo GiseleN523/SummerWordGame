@@ -5,8 +5,9 @@ class Letter:
 
     def __init__(self, char, x, y):
         self.char=char #string
-        font = pygame.font.SysFont('freesanbold.ttf', font_size)
-        self.text_default = font.render(char, True, (100, 100, 100))
+        self.font = pygame.font.SysFont('freesanbold.ttf', font_size)
+        self.color=(100, 100, 100)
+        self.text_default = self.font.render(char, True, self.color)
         self.rect=self.text_default.get_rect()
         self.rect.center=(x, y)
 
@@ -22,7 +23,7 @@ class Letter:
 
         self.font_variations = []
         for color in self.colors:
-            self.font_variations.append(font.render(char, True, color))
+            self.font_variations.append(self.font.render(char, True, color))
 
         self.word_id = 0
         
@@ -31,11 +32,16 @@ class Letter:
     def coords(self):
         return self.rect.center
 
-    def with_color(self, color):
-        if color==-1:
-            return self.text_default
+    def with_color(self, col):
+        if col==-1:
+            self.color=(100, 100, 100)
         else:
-            return self.font_variations[color % len(self.colors)]
+            self.color=colors[col % len(self.colors)]
+            #return self.font_variations[color % len(self.colors)]
+        return self.font.render(self.char, True, self.color)
+    
+    def generate_font(self):
+        return self.font.render(self.char, True, self.color)
 
     def isAdjacentTo(self, letter2):
         if abs(self.rect.x-letter2.rect.x)<(font_size*1) and abs(self.rect.y-letter2.rect.y)<(font_size*1):
