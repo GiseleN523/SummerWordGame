@@ -38,7 +38,10 @@ class Letter:
         else:
             self.color=colors[col % len(self.colors)]
             #return self.font_variations[color % len(self.colors)]
-        return self.font.render(char, True, color)
+        return self.font.render(self.char, True, self.color)
+    
+    def generate_font(self):
+        return self.font.render(self.char, True, self.color)
 
     def isAdjacentTo(self, letter2):
         if abs(self.rect.x-letter2.rect.x)<(font_size*1) and abs(self.rect.y-letter2.rect.y)<(font_size*1):

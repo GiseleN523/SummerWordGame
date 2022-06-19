@@ -90,19 +90,6 @@ class WordGenerator:
         }
         return letter_counts_dict
     
-    def all_possible_words_for_helper(self, string, letters):
-        words=[]
-        print(string)
-        print(words)
-        print(letters)
-        for let in letters:
-            print(let)
-            if self.is_valid_word(string+let):
-                words.append(string+let)
-            temp=letters.copy()
-            temp.remove(let)
-            return words.append(self.all_possible_words_for_helper(string+let, temp))
-    
     def all_possible_words_for(self, letters):#takes array of strings
         return self.all_possible_words_for_helper("", letters)
 

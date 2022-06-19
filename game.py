@@ -38,7 +38,7 @@ def main():
     SHORTEST_ALLOWED_WORD_LENGTH = 2
     
     generator=WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
-    words_raw = generator.get_random_word_list(2, 1, 5)
+    words_raw = generator.get_random_word_list(2)
     
     '''chars_raw=[]
     for word in words_raw:
@@ -47,6 +47,15 @@ def main():
     
     #print(generator.all_possible_words_for(chars_raw))
     #total_possible_words=len(generator.all_possible_words_for(chars_raw))
+    
+    colors = []
+    colors.append((255, 0, 0))
+    colors.append((0, 255, 0))
+    colors.append((0, 0, 255))
+    colors.append((127, 127, 0))
+    colors.append((127, 0, 127))
+    colors.append((0, 127, 127))
+    color_id=0
 
     letters=[]
 
@@ -155,7 +164,7 @@ def main():
 
 
         now = time.perf_counter()
-        if now - last_explosion > time_between_explosions:
+        '''if now - last_explosion > time_between_explosions:
             last_explosion = now
 
             # Stop the game if there are no more words to explode
@@ -167,7 +176,7 @@ def main():
             for letter_to_explode in word_to_explode:
                 xpos = random.randint(font_size, screen.get_width() - font_size)
                 ypos = random.randint(font_size, screen.get_height() - font_size)
-                letter_to_explode.rect.center = (xpos, ypos)
+                letter_to_explode.rect.center = (xpos, ypos)'''
 
         
         start = time.perf_counter_ns()
@@ -229,6 +238,7 @@ def main():
             for let in word:
                 w=w+let.char
             w=w+", "
+        #print(w)
 
 
         end = time.perf_counter_ns()
@@ -261,11 +271,20 @@ def main():
             for word in word_combo:
                 if letters[i] in word:
                     in_word=True
-            
-            if in_word and not letters[i].color==(100, 100, 100):
-                screen.blit(letters[i].with_color(word_id), letters[i].rect)
-            else:
-                screen.blit(letters[i].with_color(-1), letters[i].rect)
+                    
+            if in_word and letters[i].color==(100, 100, 100):
+                for word in word_combo:
+                    if letters[i] in word:
+                        for let in word:
+                            if not let.color==(100, 100, 100):
+                                letters[i].color=let.color #if there is another letter in this word with color, give letters[i] that color
+                        if letters[i].color==(100, 100, 100):
+                            letters[i].color=colors[color_id%len(colors)]
+                            color_id=color_id+1
+                                
+            elif not in_word:
+                letters[i].color=(100, 100, 100)
+            screen.blit(letters[i].generate_font(), letters[i].rect)
 
             # for x in range(0, len(letters)):
                 # if x!=i and letters[x].isAdjacentTo(letters[i]):
@@ -311,20 +330,6 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
 
 
 def get_best_combo(words_in_combo, possible_words):
-    '''input()
-    print()
-    w="words in combo: "
-    for word in words_in_combo:
-        for let in word:
-            w=w+let.char
-        w=w+", "
-    print(w)
-    w="possible words: "
-    for word in possible_words:
-        for let in word:
-            w=w+let.char
-        w=w+", "
-    print(w)'''
     best_combo=words_in_combo
     for word in possible_words:
         if not word in words_in_combo:#check for repeat word since we don't remove words from possible_words when used
@@ -343,6 +348,9 @@ def get_best_combo(words_in_combo, possible_words):
                 # print(num_unused_letters_in_combo(best_combo_this_route, possible_words))
                 if num_unused_letters_in_combo(best_combo_this_route, possible_words)<num_unused_letters_in_combo(best_combo, possible_words):
                     best_combo=best_combo_this_route
+                elif num_unused_letters_in_combo(best_combo_this_route, possible_words)==num_unused_letters_in_combo(best_combo, possible_words):
+                    if len(best_combo_this_route)<len(best_combo):
+                        best_combo=best_combo_this_route
     return best_combo
         
 def num_unused_letters_in_combo(combo, possible_words):
