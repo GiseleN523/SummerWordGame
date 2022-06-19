@@ -345,7 +345,6 @@ def get_best_combo(words_in_combo, possible_words):
                 temp=words_in_combo.copy()
                 temp.append(word)
                 best_combo_this_route=get_best_combo(temp, possible_words)
-                # print(num_unused_letters_in_combo(best_combo_this_route, possible_words))
                 if num_unused_letters_in_combo(best_combo_this_route, possible_words)<num_unused_letters_in_combo(best_combo, possible_words):
                     best_combo=best_combo_this_route
                 elif num_unused_letters_in_combo(best_combo_this_route, possible_words)==num_unused_letters_in_combo(best_combo, possible_words):
