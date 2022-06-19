@@ -19,7 +19,7 @@ class Letter:
         self.colors.append((0, 0, 255))
         self.colors.append((127, 127, 0))
         self.colors.append((127, 0, 127))
-        self.colors.append((0, 127, 127))    
+        self.colors.append((0, 127, 127))
 
         self.font_variations = []
         for color in self.colors:

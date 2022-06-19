@@ -37,6 +37,11 @@ def main():
     
     generator=WordGenerator.WordGenerator("wordlist.txt")
     words_raw = generator.get_random_word_list(10)
+
+    total_num_letters=0
+    for word in words_raw:
+        total_num_letters=total_num_letters+len()
+
     # words = sorted(words_raw, key=len, reverse=True)
 
     letters=[]
@@ -148,7 +153,7 @@ def main():
 
         connected_letters = []
         for i in range(0, len(letters)):
-
+ 
             my_connected_letters = []
             for j in range(0, len(letters)):
                 if j == i:
@@ -160,6 +165,22 @@ def main():
                             # connected_letters.append(j)
             connected_letters.append(my_connected_letters)
 
+        possible_words=[]
+        for adjacent_letters in connected_letters:
+            for adj_letter in adjacent_letters:
+                word=[row]
+                '''some logic to traverse graph'''
+                if generator.is_valid_word(word):
+                    possible_words.append(word)
+
+        fewest_unused_letters=total_num_letters
+        best_word_combo=[]
+        for word in possible_words:
+            letters
+
+# )drow()nel-srettel_mun_latot=gniniameru
+            # while 
+        
         # Blit the letters to screen
         for i in range(0, len(letters)):
             if i == hover_rect_id:
@@ -179,6 +200,14 @@ def main():
 
         # limit frames per second
         clock.tick(60)
+
+def calculate_all_adjacent_strings(connection_graph, starting_point, visited, result):
+    connections = connection_graph[starting_point]
+    visited.append(starting_point)
+    for letter_id in connections:
+        pass
+    
+
 
 if __name__=="__main__":
     main()
