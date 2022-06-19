@@ -173,14 +173,7 @@ def main():
                 if generator.is_valid_word(word):
                     possible_words.append(word)
 
-        fewest_unused_letters=total_num_letters
-        best_word_combo=[]
-        for word in possible_words:
-            letters_remaining=total_num_letters-len(word)
-            # while 
-
-# )drow()nel-srettel_mun_latot=gniniameru
-            # while 
+        word_combo=get_best_combo([], possible_words)
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
@@ -207,7 +200,28 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, re
     for letter_id in connections:
         pass
     
-
+def get_best_combo(words_in_combo, possible_words):
+    print(words_in_combo)
+    print("it")
+    best_combo=words_in_combo
+    for word in possible_words:
+        if not word in words_in_combo:#check for repeat word since we don't remove words from possible_words when used
+            repeat_letter=False
+            for w in words_in_combo:
+                for let in w:
+                    if word.contains(let):
+                        repeat_letter=True
+            if repeat_letter==False:
+                best_combo_this_route=get_best_combo(words_in_combo.append(word), possible_words)
+                if num_unused_letters_in_combo(best_combo_this_route, possible_words)>num_unused_letters_in_combo(best_combo, possible_words):
+                    best_combo=best_combo_this_route
+    return best_combo
+        
+def num_unused_letters_in_combo(words, total_num_letters):
+    lets_in_combo=0
+    for word in words:
+        lets_in_combo=lets_in_combo+len(word)
+    return total_num_letters-lets_in_combo
 
 if __name__=="__main__":
     main()
