@@ -2,16 +2,22 @@ import random
 import math
 
 class WordGenerator:
-    def __init__(self, filename):
+    def __init__(self, filename, shortest_allowed_word_length):
         file=open(filename, "r") # read file
+        self.shortest_allowed_word_length = shortest_allowed_word_length
+
         self.word_list=file.readlines()
         for i in range(0, len(self.word_list)):
-            self.word_list[i]=self.word_list[i].replace("\n", "")
+            self.word_list[i] = self.word_list[i].replace("\n", "")
+
+        #Iterate backwards over list and delete words that are too short
+        for i in range(len(self.word_list) - 1, -1, -1):
+            if len(self.word_list[i]) < self.shortest_allowed_word_length:
+                self.word_list.pop(i)
 
         self.word_map = {}
         for word in self.word_list:
             self.word_map[word] = True #the value of the dictionary doesn't matter, only the existence of the key
-
 
     def longest_word_len(self):
         longest_word=""
