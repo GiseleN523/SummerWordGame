@@ -36,7 +36,7 @@ def main():
     drag_threshold = 0.5 * font_size
     
     generator=WordGenerator.WordGenerator("wordlist.txt")
-    words_raw = generator.get_random_word_list(10)
+    words_raw = generator.get_random_word_list(1)
 
     total_num_letters=0
     for word in words_raw:
@@ -151,6 +151,9 @@ def main():
             rect = letters[drag_rect_id].rect
             rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
 
+        
+        start = time.perf_counter_ns()
+
         connected_letters = []
         for i in range(0, len(letters)):
  
@@ -164,6 +167,49 @@ def main():
                         # if not j in connected_letters:
                             # connected_letters.append(j)
             connected_letters.append(my_connected_letters)
+
+        step1 = time.perf_counter_ns()
+
+        all_possible_strings = []
+        for letter_id in range(0, len(letters)):
+            possible_strings = calculate_all_adjacent_strings(connected_letters, letter_id, [], "")
+            for pos_str in possible_strings:
+                all_possible_strings.append(pos_str)
+        
+
+        step2= time.perf_counter_ns()
+
+        all_strs = []
+        for string_ids in all_possible_strings:
+            my_str = ""
+            for id in string_ids:
+                my_str += letters[id].char
+            all_strs.append(my_str)
+
+
+        possible_words_raw = []
+        for my_str in all_strs:
+            #Do we want a lower letter bound for valid words?
+            if generator.is_valid_word(my_str):
+                possible_words_raw.append(my_str)
+
+        end = time.perf_counter_ns()
+
+        print(connected_letters)
+        print("\n")
+
+        # print(all_possible_strings)
+        # print(all_strs)
+        print(possible_words_raw)
+        print("Took", (end-start) / 1_000_000, "ms")
+        print("Step1 took", (step1-start) / 1_000_000, "ms")
+        print("Step2 took", (step2-step1) / 1_000_000, "ms")
+        print("Step3 took", (end-step2) / 1_000_000, "ms")
+
+
+
+
+        return
 
         possible_words=[]
         for adjacent_letters in connected_letters:
@@ -201,13 +247,37 @@ def main():
         # limit frames per second
         clock.tick(60)
 
-def calculate_all_adjacent_strings(connection_graph, starting_point, visited, result):
-    connections = connection_graph[starting_point]
+def calculate_all_adjacent_strings(connection_graph, starting_point, visited, tab):
+    results = []
     visited.append(starting_point)
-    for letter_id in connections:
-        pass
-    
 
+    #We also append shorter strings
+    results.append(visited.copy())
+
+    connections = connection_graph[starting_point]
+
+    valid_connections = []
+    invalid = []
+    for con in connections:
+        if not con in visited:
+            valid_connections.append(con)
+        else:
+            invalid.append(con)
+
+    # print(tab, starting_point, valid_connections, "        but not:", invalid)
+    new_tab = tab + " |"
+
+    if len(valid_connections) == 0:
+        results.append(visited.copy())
+    else:
+        for letter_id in valid_connections:
+            new_results = calculate_all_adjacent_strings(connection_graph, letter_id, visited, new_tab)
+            for new_result in new_results:
+                results.append(new_result)
+            # print(tab, starting_point, letter_id)
+
+    visited.remove(starting_point)
+    return results
 
 if __name__=="__main__":
     main()

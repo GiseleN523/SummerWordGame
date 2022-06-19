@@ -7,7 +7,12 @@ class WordGenerator:
         self.word_list=file.readlines()
         for i in range(0, len(self.word_list)):
             self.word_list[i]=self.word_list[i].replace("\n", "")
-            
+
+        self.word_map = {}
+        for word in self.word_list:
+            self.word_map[word] = True #the value of the dictionary doesn't matter, only the existence of the key
+
+
     def longest_word_len(self):
         longest_word=""
         for word in self.word_list:
@@ -16,10 +21,11 @@ class WordGenerator:
         return len(longest_word)
     
     def is_valid_word(self, word):
-        for w in self.word_list:
-            if w.lower()==word.lower():
-                return True
-        return False
+        return word in self.word_map
+        # for w in self.word_list:
+        #     if w.lower()==word.lower():
+        #         return True
+        # return False
             
     def get_random_word_list(self, num_words, min_length=None, max_length=None): 
         random_word_list=[]
