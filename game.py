@@ -177,6 +177,7 @@ def main():
         explosion_relative_time_left = 1 - (now - last_explosion) / time_between_explosions
         if now - last_explosion > time_between_explosions:
             last_explosion = now
+            time_between_explosions = 0.9 * time_between_explosions
 
             # Stop the game if there are no more words to explode
             if len(last_frame_word_combo) == 0:
