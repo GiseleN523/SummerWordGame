@@ -36,13 +36,7 @@ def main():
     drag_threshold = 0.5 * font_size
     
     generator=WordGenerator.WordGenerator("wordlist.txt")
-    words_raw = generator.get_random_word_list(1)
-
-    total_num_letters=0
-    for word in words_raw:
-        total_num_letters=total_num_letters+len(word)
-
-    # words = sorted(words_raw, key=len, reverse=True)
+    words_raw = generator.get_random_word_list(2, 1, 5)
 
     letters=[]
     #letters_hover=[]
@@ -64,10 +58,7 @@ def main():
             for letter in letters:
                 if letter.rect.colliderect(possible_word_rect):
                     legal_pos=False
-        if not legal_pos:
-            print("timed out")            
-        # print(word, screen.get_width() - len(word) * font_spacing, screen.get_height() - font_size)
-
+                    
         lets_in_word=[]
         for letter in word:
             new_let=Letter.Letter(letter, xpos, ypos)
@@ -224,17 +215,23 @@ def main():
 
 
 
-        return
+        #return
 
-        possible_words=[]
+        '''possible_words=[]
         for adjacent_letters in connected_letters:
             for adj_letter in adjacent_letters:
                 word="hello"
-                '''some logic to traverse graph'''
+                # some logic to traverse graph
                 if generator.is_valid_word(word):
-                    possible_words.append(word)
+                    possible_words.append(word)'''
 
         word_combo=get_best_combo([], possible_words)
+        w="best: "
+        for word in word_combo:
+            for let in word:
+                w=w+let.char
+            w=w+", "
+        print(w)
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
@@ -291,28 +288,52 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
 
 
 def get_best_combo(words_in_combo, possible_words):
-    print(words_in_combo)
-    print("it")
+    '''input()
+    print()
+    w="words in combo: "
+    for word in words_in_combo:
+        for let in word:
+            w=w+let.char
+        w=w+", "
+    print(w)
+    w="possible words: "
+    for word in possible_words:
+        for let in word:
+            w=w+let.char
+        w=w+", "
+    print(w)'''
     best_combo=words_in_combo
     for word in possible_words:
-
         if not word in words_in_combo:#check for repeat word since we don't remove words from possible_words when used
             repeat_letter=False
             for w in words_in_combo:
                 for let in w:
-                    if word.contains(let):
+                    if let in word:
                         repeat_letter=True
+                        break
+                if repeat_letter==True:
+                    break
             if repeat_letter==False:
-                best_combo_this_route=get_best_combo(words_in_combo.append(word), possible_words)
-                if num_unused_letters_in_combo(best_combo_this_route, possible_words)>num_unused_letters_in_combo(best_combo, possible_words):
+                temp=words_in_combo.copy()
+                temp.append(word)
+                best_combo_this_route=get_best_combo(temp, possible_words)
+                # print(num_unused_letters_in_combo(best_combo_this_route, possible_words))
+                if num_unused_letters_in_combo(best_combo_this_route, possible_words)<num_unused_letters_in_combo(best_combo, possible_words):
                     best_combo=best_combo_this_route
     return best_combo
         
-def num_unused_letters_in_combo(words, total_num_letters):
-    lets_in_combo=0
-    for word in words:
-        lets_in_combo=lets_in_combo+len(word)
-    return total_num_letters-lets_in_combo
+def num_unused_letters_in_combo(combo, possible_words):
+    unique_letters_combo=[]
+    unique_letters_possible_words=[]
+    for w in possible_words:
+        for let in w:
+            if not let in unique_letters_possible_words:
+                unique_letters_possible_words.append(let)
+    for w in combo:
+        for let in w:
+            if not let in unique_letters_combo:
+                unique_letters_combo.append(let)
+    return len(unique_letters_possible_words)-len(unique_letters_combo)
 
 if __name__=="__main__":
     main()

@@ -7236,7 +7236,6 @@ bullion
 bullish
 bullock
 bulls
-bullshit!
 bully
 bullyboys
 bulrush
@@ -14617,10 +14616,6 @@ cranky
 crannied
 crannies
 cranny
-crap
-crapped
-crapper!
-crappers!
 crappier
 crappiest
 crapping
@@ -14681,7 +14676,6 @@ crazeded
 crazedwman
 crazes
 crazier
-crazies!
 craziest
 crazily
 craziness
@@ -15427,8 +15421,6 @@ cunnilingus
 cunning
 cunningly
 cunningness
-cunt!
-cunts!
 cup
 cupbearer
 cupbearers
@@ -18168,7 +18160,6 @@ dichotomously
 dichotomousness
 dichotomy
 dicing
-dick!
 dickens
 dicker
 dickered
@@ -18178,7 +18169,6 @@ dickey
 dickeys
 dickie
 dickies
-dicks!
 dicky
 dicotyledon
 dicotyledonous
@@ -18382,8 +18372,6 @@ dilations
 dilatorily
 dilatoriness
 dilatory
-dildo!
-dildos!
 dilemma
 dilemmas
 dilemmatic
@@ -18481,7 +18469,6 @@ dings
 dingus
 dingy
 dining
-dink!
 dinkey
 dinkeys
 dinkies
@@ -19785,8 +19772,6 @@ doctrinal
 doctrinally
 doctrine
 doctrines
-docudrama!
-docudramas!
 document
 documentaries
 documentary
@@ -19993,7 +19978,6 @@ donating
 donation
 donations
 done
-dong!
 donjon
 donjons
 donkey
@@ -27847,11 +27831,8 @@ friendships
 fries
 frieze
 friezes
-frig!
 frigate
 frigates
-frigged!
-frigging!
 fright
 frighten
 frightened
@@ -27864,7 +27845,6 @@ frightfulness
 frigid
 frigidity
 frigidness
-frigs!
 frill
 frilled
 frilling
@@ -33267,7 +33247,6 @@ hominized
 hominoid
 hominoids
 hominy
-homo!
 homogeneity
 homogeneous
 homogeneously
@@ -33294,7 +33273,6 @@ homonyms
 homophone
 homophones
 homophyly
-homos!
 homosexual
 homosexuality
 homosexuals
@@ -33535,7 +33513,6 @@ horseplayers
 horsepower
 horseradish
 horses
-horseshit!
 horseshoe
 horseshoer
 horseshoers
@@ -44828,7 +44805,6 @@ micas
 mice
 micellar
 micelle
-mick!
 micra
 micro
 microamp
@@ -48270,8 +48246,6 @@ niggarding
 niggardliness
 niggardly
 niggards
-nigger!
-niggers!
 niggle
 niggled
 niggles
@@ -49411,7 +49385,6 @@ noodles
 noodling
 nook
 nooks
-nooky!
 noon
 noonday
 nooning
@@ -53608,8 +53581,6 @@ peccary
 peccavi
 peck
 pecked
-pecker!
-peckers!
 pecking
 pecks
 pectic
@@ -55289,10 +55260,6 @@ piscatorially
 piscatory
 pismire
 pismires
-piss!
-pissed!
-pisses!
-pissing!
 pissoir
 pissoirs
 pistachio
@@ -59166,8 +59133,6 @@ pusillanimity
 pusillanimous
 pusillanimously
 puss
-pussies!
-pussy!
 pussycat
 pussycats
 pussyfoot
@@ -68680,9 +68645,6 @@ shirttails
 shirtwaist
 shirtwaists
 shirty
-shit!
-shits!
-shitting!
 shiv
 shivaree
 shivareed
@@ -70319,11 +70281,6 @@ slushiest
 slushiness
 slushing
 slushy
-slut!
-sluts!
-sluttish!
-sluttishly!
-sluttishness!
 sly
 slyboots
 slyly
@@ -80901,8 +80858,6 @@ twanging
 twangs
 twangy
 twas
-twat!
-twats!
 tweak
 tweaked
 tweaking
