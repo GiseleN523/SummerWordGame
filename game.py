@@ -40,7 +40,7 @@ def main():
 
     total_num_letters=0
     for word in words_raw:
-        total_num_letters=total_num_letters+len()
+        total_num_letters=total_num_letters+len(word)
 
     # words = sorted(words_raw, key=len, reverse=True)
 
@@ -168,7 +168,7 @@ def main():
         possible_words=[]
         for adjacent_letters in connected_letters:
             for adj_letter in adjacent_letters:
-                word=[row]
+                word="hello"
                 '''some logic to traverse graph'''
                 if generator.is_valid_word(word):
                     possible_words.append(word)
@@ -177,7 +177,7 @@ def main():
         best_word_combo=[]
         for word in possible_words:
             letters_remaining=total_num_letters-len(word)
-            while 
+            # while 
 
 # )drow()nel-srettel_mun_latot=gniniameru
             # while 
@@ -195,7 +195,6 @@ def main():
             # for x in range(0, len(letters)):
                 # if x!=i and letters[x].isAdjacentTo(letters[i]):
                     # print(letters[x].char," ",letters[i].char)
-
                 
         pygame.display.flip()
 
