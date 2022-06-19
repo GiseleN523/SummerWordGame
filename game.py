@@ -251,7 +251,7 @@ def main():
                 if letters[i] in word:
                     in_word=True
             
-            if in_word:
+            if in_word and not letters[i].color==(100, 100, 100):
                 screen.blit(letters[i].with_color(word_id), letters[i].rect)
             else:
                 screen.blit(letters[i].with_color(-1), letters[i].rect)
