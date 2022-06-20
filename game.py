@@ -17,6 +17,7 @@ TODO:
 """
 
 def main():
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
     pygame.init()
     # create a surface on screen that has the size of the computer screen
     pygame.display.set_caption("Our Game")
@@ -96,8 +97,6 @@ def main():
             rectangles.append(newRect)'''
             xpos += font_spacing
         current_word_id += 1
-
-
 
 
     # print(connected_letters)
@@ -185,10 +184,32 @@ def main():
                 return
             
             word_to_explode = last_frame_word_combo[0]
-            for letter_to_explode in word_to_explode:
-                xpos = random.randint(font_size, screen.get_width() - font_size)
-                ypos = random.randint(font_size, screen.get_height() - font_size)
-                letter_to_explode.rect.center = (xpos, ypos)
+            # pick a letter to explode, excluding both endpoint letters
+            letter_num = 0
+            if len(word_to_explode) < 3:
+                letter_num = random.randint(0,1)
+            else:
+                letter_num = random.randint(1, len(word_to_explode) - 1)
+
+            letter = word_to_explode[letter_num]
+            previous_char = letter.char
+            choice_alphabet = alphabet.replace(previous_char, "")
+            assert len(choice_alphabet) == 25
+            new_char = choice_alphabet[random.randint(0,len(choice_alphabet))]
+            new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
+
+            letters[letters.index(letter)] = new_letter
+
+            # xpos = random.randint(font_size, screen.get_width() - font_size)
+            # ypos = random.randint(font_size, screen.get_height() - font_size)
+            # word_to_explode[letter_num].rect.center = (xpos, ypos)
+
+
+            # Explode a whole word
+            # for letter_to_explode in word_to_explode:
+            #     xpos = random.randint(font_size, screen.get_width() - font_size)
+            #     ypos = random.randint(font_size, screen.get_height() - font_size)
+            #     letter_to_explode.rect.center = (xpos, ypos)
 
         
         start = time.perf_counter_ns()
@@ -201,10 +222,8 @@ def main():
                 if j == i:
                     pass
                 else:
-                    if letters[i].isAdjacentTo(letters[j]):
+                    if letters[i].isAdjacentAndLeft(letters[j]):
                         my_connected_letters.append(j)
-                        # if not j in connected_letters:
-                            # connected_letters.append(j)
             connected_letters.append(my_connected_letters)
 
         step1 = time.perf_counter_ns()
@@ -218,13 +237,6 @@ def main():
     
         step2= time.perf_counter_ns()
 
-        # all_strs = []
-        # for string_ids in all_possible_strings:
-        #     my_str = ""
-        #     for id in string_ids:
-        #         my_str += letters[id].char
-        #     all_strs.append(my_str)
-
         possible_words = []
         possible_words_raw = []
         for i in range(0, len(all_possible_strings)):
@@ -233,7 +245,6 @@ def main():
             for index in string_ids:
                 my_str += letters[index].char
 
-            #Do we want a lower letter bound for valid words?
             if generator.is_valid_word(my_str):
                 letters_in_word = map(lambda let_id: letters[let_id], string_ids)
                 possible_words.append(list(letters_in_word))
@@ -269,6 +280,15 @@ def main():
         print("Step3 took", (step3-step2) / 1_000_000, "ms")
         print("Step4 took", (now-step3) / 1_000_000, "ms")
         """
+
+        #Blit word connections to screen
+        for word in word_combo:
+            for i in range(0, len(word)-1):
+                left_letter = word[i]
+                right_letter = word[i+1]
+
+                pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
+
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
@@ -297,10 +317,6 @@ def main():
             elif not in_word:
                 letters[i].color=(100, 100, 100)
             screen.blit(letters[i].generate_font(), letters[i].rect)
-
-            # for x in range(0, len(letters)):
-                # if x!=i and letters[x].isAdjacentTo(letters[i]):
-                    # print(letters[x].char," ",letters[i].char)
 
         # Blit the explosion timer to screen
         explosion_candle_rect = Rect(0,0, explosion_relative_time_left * scr_width, 0.025*scr_height)
