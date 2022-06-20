@@ -1,4 +1,9 @@
 import pygame
+import math
+
+MAX_CONNECT_DIST_MOD = 1.5 #multiplied times font size
+MAX_CONNECT_ANGLE = 0.6 * math.pi #out of 1 pi
+
 
 class Letter:
     font_size=10
@@ -43,8 +48,13 @@ class Letter:
     def generate_font(self):
         return self.font.render(self.char, True, self.color)
 
-    def isAdjacentTo(self, letter2):
-        if abs(self.rect.x-letter2.rect.x)<(font_size*1) and abs(self.rect.y-letter2.rect.y)<(font_size*1):
-            return True
-        else:
-            return False
+    def isAdjacentAndLeft(self, letter2):
+        (x,y) = self.coords()
+        (x2, y2) = letter2.coords()
+        dist = math.hypot(x2-x, y2-y)
+        theta = math.atan2(y2-y, x2-x)
+        return dist < font_size*MAX_CONNECT_DIST_MOD and abs(theta) < MAX_CONNECT_ANGLE
+
+        # isLeft = self.rect.x < letter2.rect.x
+        # adjacentHorizontally = abs(self.rect.x-letter2.rect.x)<(font_size*MAX_CONNECT_DIST_MOD)
+        # adjacentVertically = abs(self.rect.y-letter2.rect.y)<(font_size*MAX_CONNECT_DIST_MOD)
