@@ -17,6 +17,7 @@ TODO:
 """
 
 def main():
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
     pygame.init()
     # create a surface on screen that has the size of the computer screen
     pygame.display.set_caption("Our Game")
@@ -183,10 +184,32 @@ def main():
                 return
             
             word_to_explode = last_frame_word_combo[0]
-            for letter_to_explode in word_to_explode:
-                xpos = random.randint(font_size, screen.get_width() - font_size)
-                ypos = random.randint(font_size, screen.get_height() - font_size)
-                letter_to_explode.rect.center = (xpos, ypos)
+            # pick a letter to explode, excluding both endpoint letters
+            letter_num = 0
+            if len(word_to_explode) < 3:
+                letter_num = random.randint(0,1)
+            else:
+                letter_num = random.randint(1, len(word_to_explode) - 1)
+
+            letter = word_to_explode[letter_num]
+            previous_char = letter.char
+            choice_alphabet = alphabet.replace(previous_char, "")
+            assert len(choice_alphabet) == 25
+            new_char = choice_alphabet[random.randint(0,len(choice_alphabet))]
+            new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
+
+            letters[letters.index(letter)] = new_letter
+
+            # xpos = random.randint(font_size, screen.get_width() - font_size)
+            # ypos = random.randint(font_size, screen.get_height() - font_size)
+            # word_to_explode[letter_num].rect.center = (xpos, ypos)
+
+
+            # Explode a whole word
+            # for letter_to_explode in word_to_explode:
+            #     xpos = random.randint(font_size, screen.get_width() - font_size)
+            #     ypos = random.randint(font_size, screen.get_height() - font_size)
+            #     letter_to_explode.rect.center = (xpos, ypos)
 
         
         start = time.perf_counter_ns()
