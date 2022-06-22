@@ -7,13 +7,9 @@ import WordGenerator
 import Letter
 
 """
-TODO:
-- detect when letter player has moved is no longer part of a word and whether the word is still valid
-- detect when player has added a letter to a word that makes it valid
-    - only react when the word makes a valid word? otherwise treat it as if it is just an extra gray letter?
-- have letters randomly move away (also determine whether new word is valid)
-- different colored words? or different colored letters (by letter)
-- custom cursor?
+What is causing it to be so slow?
+-two recursive methods (calculate_all_adjacent_strings() and get_best_combo)?
+-determining color for each letter?
 """
 
 def main():
@@ -39,35 +35,35 @@ def main():
     SHORTEST_ALLOWED_WORD_LENGTH = 2
     
     generator=WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
-    words_raw = generator.get_random_word_list(2, 1, 5)
-
+    #words_raw = generator.get_random_word_list(2)
+    
     #Debug tools
     debug_font_size = int(min(scr_width, scr_height) / 30)
     debug_font = pygame.font.SysFont('freesanbold.ttf', debug_font_size)
-
     
-    '''chars_raw=[]
-    for word in words_raw:
-        for char in word:
-            chars_raw.append(char)'''
+    words_used=[]
     
-    #print(generator.all_possible_words_for(chars_raw))
-    #total_possible_words=len(generator.all_possible_words_for(chars_raw))
-    
-    colors = []
-    colors.append((255, 0, 0))
-    colors.append((0, 255, 0))
-    colors.append((0, 0, 255))
-    colors.append((127, 127, 0))
-    colors.append((127, 0, 127))
-    colors.append((0, 127, 127))
-    color_id=0
+    available_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 0), (127, 0, 127), (0, 127, 127)]
 
     letters=[]
+    chars=generator.get_random_chars(25)
+    
+    for char in chars:
+        new_let=Letter.Letter(char, 0, 0)
+        legal_pos=False
+        while not legal_pos:
+            xpos = random.randint(font_size, screen.get_width() - font_spacing)
+            ypos = random.randint(font_size, screen.get_height() - font_size)
+            new_let.rect.center=(xpos, ypos)
+            legal_pos=True
+            for let in letters:
+                if let.isAdjacentAndLeft(new_let) or new_let.isAdjacentAndLeft(let):
+                    legal_pos=False
+                    break
+                    
+        letters.append(new_let)
 
-    current_word_id = 0
-
-    for word in words_raw:
+    '''for word in words_raw:
         legal_pos=False
         num_tries=0
         while not legal_pos and num_tries<500:
@@ -79,37 +75,23 @@ def main():
             for letter in letters:
                 if letter.rect.colliderect(possible_word_rect):
                     legal_pos=False
+                    break
                     
         lets_in_word=[]
         for letter in word:
             new_let=Letter.Letter(letter, xpos, ypos)
-            new_let.word_id = current_word_id
             lets_in_word.append(new_let)
             letters.append(new_let)
-            '''newText=font1.render(letter, True, (100, 100, 100))
-            newText_hover = font1.render(letter, True, (25, 25, 25))
-            newRect=newText.get_rect()
-            # newRect.center=(xpos, ypos + int(0.1 * random.randint(-font_size, font_size)))
-            newRect.center=(xpos, ypos)
-            letters.append(newText)
-            lets_in_word.append(newText)
-            letters_hover.append(newText_hover)
-            rectangles.append(newRect)'''
-            xpos += font_spacing
-        current_word_id += 1
-
-
-    # print(connected_letters)
-
-    
+            xpos += font_spacing'''
+            
     running = True
     mouse_hold_down = False
-
+    
     # -1 if not dragging/hovering over anything, otherwise the id of the rect in the list
-    drag_rect_id = -1 
-    hover_rect_id = -1
+    drag_rect = None
+    hover_rect = None
 
-    time_between_explosions = 10 #seconds
+    time_between_explosions = 20 #seconds
     last_explosion = time.perf_counter()
 
     last_frame_word_combo = []
@@ -143,29 +125,28 @@ def main():
 
         if not mouse_hold_down:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            drag_rect_id = -1 #drag nothing
+            drag_rect = None #drag nothing
 
-            hover_rect_id = -1
-            nearest_rect = (-1, 0) # (rect id, distance from mouse)
-            for i in range(0, len(letters)):
-                (x, y) = letters[i].coords()
+            hover_rect = None
+            nearest_rect = (None, 0) # (rect id, distance from mouse)
+            for let in letters:
+                (x, y) = let.coords()
                 dist = math.hypot(x - mousex, y - mousey)
                 # print(i, "distance", dist)
-                if dist < nearest_rect[1] or nearest_rect[0] == -1:
-                    nearest_rect = (i, dist)
+                if dist < nearest_rect[1] or nearest_rect[0] == None:
+                    nearest_rect = (let.rect, dist)
             # print("mouse down nearest rect", nearest_rect)
             # print(words[nearest_rect[0]])
             if nearest_rect[1] < drag_threshold:
-                hover_rect_id = nearest_rect[0]
+                hover_rect = nearest_rect[0]
 
-        if mouse_click_down and hover_rect_id != -1:
+        if mouse_click_down and hover_rect != None:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-            drag_rect_id = hover_rect_id
+            drag_rect = hover_rect
 
         # Update the dragged letter's pos, if we are dragging
-        if drag_rect_id >= 0:
-            rect = letters[drag_rect_id].rect
-            rect.update(mousex - 0.5*rect.width, mousey - 0.5*rect.height, rect.width, rect.height)
+        if drag_rect != None:
+            drag_rect.update(mousex - 0.5*drag_rect.width, mousey - 0.5*drag_rect.height, drag_rect.width, drag_rect.height)
 
         # Time
         now = time.perf_counter()
@@ -193,12 +174,21 @@ def main():
 
             letter = word_to_explode[letter_num]
             previous_char = letter.char
-            choice_alphabet = alphabet.replace(previous_char, "")
+            choice_alphabet = alphabet.replace(previous_char, "")   # base this on scrabble distribution in WordGenerator instead
             assert len(choice_alphabet) == 25
-            new_char = choice_alphabet[random.randint(0,len(choice_alphabet))]
+            new_char = random.choice(choice_alphabet)
             new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
 
             letters[letters.index(letter)] = new_letter
+            
+            #update words used
+            for word in last_frame_word_combo:
+                word_raw=""
+                for let in word:
+                    word_raw+=let.char
+                if not word_raw in words_used:
+                    words_used.append(word_raw)
+                    generator.remove_word(word_raw)
 
             # xpos = random.randint(font_size, screen.get_width() - font_size)
             # ypos = random.randint(font_size, screen.get_height() - font_size)
@@ -256,14 +246,14 @@ def main():
         word_combo=get_best_combo([], possible_words)
         last_frame_word_combo = word_combo
         
-        w="best: "
+        words_raw=""
         for word in word_combo:
             for let in word:
-                w=w+let.char
-            w=w+", "
-        #print(w)
-
-
+                words_raw+=let.char
+            words_raw+=", "
+        #print(words_raw)
+            
+        
         end = time.perf_counter_ns()
 
         """
@@ -280,48 +270,61 @@ def main():
         print("Step3 took", (step3-step2) / 1_000_000, "ms")
         print("Step4 took", (now-step3) / 1_000_000, "ms")
         """
-
+                        
+        strings=""
+        for let in unused_letters_in_combo(word_combo, letters):
+            strings+=let.char+", "
+            let.connected=False
+        #print(strings)
+        
+        #add colors back in to available_colors if no connected letters are already using them
+        for let in letters:
+            if not let.color in available_colors:
+                available=True
+                for let2 in letters:
+                    if let2!=let and let2.color==let.color and let2.connected==True:
+                        available=False
+                if available:
+                    available_colors.append(let.color)
+                            
         #Blit word connections to screen
         for word in word_combo:
-            for i in range(0, len(word)-1):
-                left_letter = word[i]
-                right_letter = word[i+1]
+            for i in range(0, len(word)):
+                if i+1<len(word):
+                    left_letter = word[i]
+                    right_letter = word[i+1]
 
-                pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
-
+                    pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
+                
+                if word[i].connected==False:
+                    word[i].connected=True
+                    if (i-1)>=0 and (word[i-1].color in available_colors or word[i-1].connected==True) and word[i-1].color!=(100, 100, 100):
+                        color=word[i-1].color
+                    elif (i+1)<len(word) and (word[i+1].color in available_colors or word[i+1].connected==True) and word[i-1].color!=(100, 100, 100):
+                        color=word[i+1].color
+                    else:
+                        color=random.choice(available_colors)
+                    word[i].color=color
+                    if color in available_colors:
+                        available_colors.remove(color)
+                        
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
-            #if i == hover_rect_id:
-                #screen.blit(letters[i].text_hover, letters[i].rect)
-            # if i in connected_letters:
-            #     screen.blit(letters[i].text_red, letters[i].rect)
-            #else:
-            word_id = letters[i].word_id
-            
-            in_word=False
-            for word in word_combo:
-                if letters[i] in word:
-                    in_word=True
-                    
-            if in_word and letters[i].color==(100, 100, 100):
-                for word in word_combo:
-                    if letters[i] in word:
-                        for let in word:
-                            if not let.color==(100, 100, 100):
-                                letters[i].color=let.color #if there is another letter in this word with color, give letters[i] that color
-                        if letters[i].color==(100, 100, 100):
-                            letters[i].color=colors[color_id%len(colors)]
-                            color_id=color_id+1
-                                
-            elif not in_word:
-                letters[i].color=(100, 100, 100)
             screen.blit(letters[i].generate_font(), letters[i].rect)
-
+            
         # Blit the explosion timer to screen
         explosion_candle_rect = Rect(0,0, explosion_relative_time_left * scr_width, 0.025*scr_height)
         pygame.draw.rect(screen, (0,0,255), explosion_candle_rect)
-
+        
+        # Blit words used to screen
+        ycoord=explosion_candle_rect.height+5
+        words_used_header = debug_font.render("Words Used", False, (0, 0, 0))
+        screen.blit(words_used_header, (5, ycoord))
+        for word in words_used:
+            word_txt = debug_font.render(word, False, (0, 0, 0))
+            ycoord+=debug_font.get_height()
+            screen.blit(word_txt, (5, ycoord))
 
         # Display debug info
         frame_duration_display = debug_font.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
@@ -382,25 +385,29 @@ def get_best_combo(words_in_combo, possible_words):
                 temp=words_in_combo.copy()
                 temp.append(word)
                 best_combo_this_route=get_best_combo(temp, possible_words)
-                if num_unused_letters_in_combo(best_combo_this_route, possible_words)<num_unused_letters_in_combo(best_combo, possible_words):
+                possible_letters=[]
+                for w in possible_words:
+                    possible_letters=possible_letters+w
+                best_combo_this_route_unused=len(unused_letters_in_combo(best_combo_this_route, possible_letters))
+                best_combo_unused=len(unused_letters_in_combo(best_combo, possible_letters))
+                if best_combo_this_route_unused<best_combo_unused:
                     best_combo=best_combo_this_route
-                elif num_unused_letters_in_combo(best_combo_this_route, possible_words)==num_unused_letters_in_combo(best_combo, possible_words):
-                    if len(best_combo_this_route)<len(best_combo):
+                elif best_combo_this_route_unused==best_combo_unused and len(best_combo_this_route)<len(best_combo):
                         best_combo=best_combo_this_route
     return best_combo
         
-def num_unused_letters_in_combo(combo, possible_words):
-    unique_letters_combo=[]
-    unique_letters_possible_words=[]
-    for w in possible_words:
-        for let in w:
-            if not let in unique_letters_possible_words:
-                unique_letters_possible_words.append(let)
-    for w in combo:
-        for let in w:
-            if not let in unique_letters_combo:
-                unique_letters_combo.append(let)
-    return len(unique_letters_possible_words)-len(unique_letters_combo)
-
+def unused_letters_in_combo(combo, possible_letters):
+    combo_lets=[]
+    unused=[]
+    for let in possible_letters:
+        present=False
+        for word in combo:
+            if let in word:
+                present=True
+                break
+        if not present:
+            unused.append(let)
+    return unused
+        
 if __name__=="__main__":
     main()
