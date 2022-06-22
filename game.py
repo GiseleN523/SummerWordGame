@@ -7,6 +7,16 @@ import WordGenerator
 import Letter
 
 """
+TO DO
+-use scrabble distribution when determining which letters to change into
+-problem: it is the letters that are part of words that change, and so we end up losing all our vowels
+-when to add words to list? each time one is formed or when timer runs out (current method)
+-should letters also need to be above letters they come before, the way they need to be to their left?
+-actual "you lose" message and option to play again
+-more languages
+-special abilities when you form certain words (palindromes, >5 letters, etc): choose any letter, slow down time, hint, etc
+
+
 What is causing it to be so slow?
 -two recursive methods (calculate_all_adjacent_strings() and get_best_combo)?
 -determining color for each letter?
@@ -289,25 +299,28 @@ def main():
                             
         #Blit word connections to screen
         for word in word_combo:
-            for i in range(0, len(word)):
-                if i+1<len(word):
-                    left_letter = word[i]
-                    right_letter = word[i+1]
+            color=(100, 100, 100)
+            for i in range(0, len(word)-1):
+                left_letter = word[i]
+                right_letter = word[i+1]
 
-                    pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
+                pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
                 
-                if word[i].connected==False:
-                    word[i].connected=True
-                    if (i-1)>=0 and (word[i-1].color in available_colors or word[i-1].connected==True) and word[i-1].color!=(100, 100, 100):
-                        color=word[i-1].color
-                    elif (i+1)<len(word) and (word[i+1].color in available_colors or word[i+1].connected==True) and word[i-1].color!=(100, 100, 100):
-                        color=word[i+1].color
-                    else:
-                        color=random.choice(available_colors)
-                    word[i].color=color
-                    if color in available_colors:
-                        available_colors.remove(color)
-                        
+                if (left_letter.color in available_colors or left_letter.connected==True) and left_letter.color!=(100, 100, 100):
+                    color=left_letter.color
+                    
+                if left_letter.connected==False:
+                    left_letter.connected=True
+                    
+            if word[len(word)-1].connected==False: # check this one because loop only goes to len(word)-1 and it was skipped
+                word[len(word)-1].connected=True
+                                        
+            if color==(100, 100, 100):
+                color=random.choice(available_colors)
+            if color in available_colors:
+                available_colors.remove(color)
+            for let in word:
+                let.color=color
         
         # Blit the letters to screen
         for i in range(0, len(letters)):
