@@ -53,7 +53,8 @@ def main():
     
     words_used=[]
     
-    available_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 0), (127, 0, 127), (0, 127, 127)]
+    #available_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 0), (127, 0, 127), (0, 127, 127)]
+    available_colors = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 255, 255), (255, 72, 0)]
 
     letters=[]
     chars=generator.get_random_chars(25)
@@ -73,27 +74,6 @@ def main():
                     
         letters.append(new_let)
 
-    '''for word in words_raw:
-        legal_pos=False
-        num_tries=0
-        while not legal_pos and num_tries<500:
-            xpos = random.randint(font_size, screen.get_width() - len(word) * font_spacing)
-            ypos = random.randint(font_size, screen.get_height() - font_size)
-            num_tries=num_tries+1
-            legal_pos=True
-            possible_word_rect = Rect(xpos-(font_size), ypos-(font_size), (font_spacing*len(word))+(font_size*1.5), font_size*2)
-            for letter in letters:
-                if letter.rect.colliderect(possible_word_rect):
-                    legal_pos=False
-                    break
-                    
-        lets_in_word=[]
-        for letter in word:
-            new_let=Letter.Letter(letter, xpos, ypos)
-            lets_in_word.append(new_let)
-            letters.append(new_let)
-            xpos += font_spacing'''
-            
     running = True
     mouse_hold_down = False
     
@@ -316,7 +296,10 @@ def main():
                 word[len(word)-1].connected=True
                                         
             if color==(100, 100, 100):
-                color=random.choice(available_colors)
+                if len(available_colors)>0:
+                    color=random.choice(available_colors)
+                else:
+                    color=word[0].color
             if color in available_colors:
                 available_colors.remove(color)
             for let in word:
