@@ -3,6 +3,7 @@ from pygame.locals import *
 import random
 import math
 import time
+import textwrap
 import WordGenerator
 import Letter
 
@@ -38,6 +39,9 @@ def main():
     # === TUNABLE SETTINGS ===
     font_size = int(min(scr_width, scr_height) / 10)
     Letter.font_size=font_size
+    header_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 10))
+    paragraph_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 20))
+    button_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 15))
     # print("Font size: ", font_size)
     font_spacing = int(0.5 * font_size)  #TODO: make this use internal font spacing
     drag_threshold = 0.5 * font_size
@@ -75,6 +79,8 @@ def main():
         letters.append(new_let)
 
     running = True
+    game_playing=False
+    game_over=False
     mouse_hold_down = False
     
     # -1 if not dragging/hovering over anything, otherwise the id of the rect in the list
@@ -112,220 +118,314 @@ def main():
         # === GAME LOGIC and RENDER ===
         # clear display
         screen.fill((255, 255, 255))
-
-        if not mouse_hold_down:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            drag_rect = None #drag nothing
-
-            hover_rect = None
-            nearest_rect = (None, 0) # (rect id, distance from mouse)
-            for let in letters:
-                (x, y) = let.coords()
-                dist = math.hypot(x - mousex, y - mousey)
-                # print(i, "distance", dist)
-                if dist < nearest_rect[1] or nearest_rect[0] == None:
-                    nearest_rect = (let.rect, dist)
-            # print("mouse down nearest rect", nearest_rect)
-            # print(words[nearest_rect[0]])
-            if nearest_rect[1] < drag_threshold:
-                hover_rect = nearest_rect[0]
-
-        if mouse_click_down and hover_rect != None:
-            pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-            drag_rect = hover_rect
-
-        # Update the dragged letter's pos, if we are dragging
-        if drag_rect != None:
-            drag_rect.update(mousex - 0.5*drag_rect.width, mousey - 0.5*drag_rect.height, drag_rect.width, drag_rect.height)
-
-        # Time
-        now = time.perf_counter()
-        frame_duration_in_ms = (now - last_frame_time) * 1000
-        last_frame_time = now
-
-        #Explosion        
-        explosion_relative_time_left = 1 - (now - last_explosion) / time_between_explosions
-        if now - last_explosion > time_between_explosions:
-            last_explosion = now
-            time_between_explosions = 0.9 * time_between_explosions
-
-            # Stop the game if there are no more words to explode
-            if len(last_frame_word_combo) == 0:
-                print("YOU LOSE")
-                return
+        popup=Rect(75, 75, scr_width-150, scr_height-150)
+        
+        if not game_playing and not game_over:
+            pygame.draw.rect(screen, (220, 220, 255), popup)
+            str1="HOW TO PLAY"
+            txt1=header_font.render(str1, True, (0, 0, 0))
+            txt1_rect=txt1.get_rect()
+            txt1_rect.center=(scr_width/2, 100+(txt1_rect.height/2))
+            screen.blit(txt1, txt1_rect)
+            ypos=100+txt1_rect.height+50
             
-            word_to_explode = last_frame_word_combo[0]
-            # pick a letter to explode, excluding both endpoint letters
-            letter_num = 0
-            if len(word_to_explode) < 3:
-                letter_num = random.randint(0,1)
-            else:
-                letter_num = random.randint(1, len(word_to_explode) - 1)
-
-            letter = word_to_explode[letter_num]
-            previous_char = letter.char
-            choice_alphabet = alphabet.replace(previous_char, "")   # base this on scrabble distribution in WordGenerator instead
-            assert len(choice_alphabet) == 25
-            new_char = random.choice(choice_alphabet)
-            new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
-
-            letters[letters.index(letter)] = new_letter
-            
-            #update words used
-            for word in last_frame_word_combo:
-                word_raw=""
-                for let in word:
-                    word_raw+=let.char
-                if not word_raw in words_used:
-                    words_used.append(word_raw)
-                    generator.remove_word(word_raw)
-
-            # xpos = random.randint(font_size, screen.get_width() - font_size)
-            # ypos = random.randint(font_size, screen.get_height() - font_size)
-            # word_to_explode[letter_num].rect.center = (xpos, ypos)
-
-
-            # Explode a whole word
-            # for letter_to_explode in word_to_explode:
-            #     xpos = random.randint(font_size, screen.get_width() - font_size)
-            #     ypos = random.randint(font_size, screen.get_height() - font_size)
-            #     letter_to_explode.rect.center = (xpos, ypos)
-
-        
-        start = time.perf_counter_ns()
-
-        connected_letters = []
-        for i in range(0, len(letters)):
- 
-            my_connected_letters = []
-            for j in range(0, len(letters)):
-                if j == i:
-                    pass
-                else:
-                    if letters[i].isAdjacentAndLeft(letters[j]):
-                        my_connected_letters.append(j)
-            connected_letters.append(my_connected_letters)
-
-        step1 = time.perf_counter_ns()
-
-        all_possible_strings = []
-        for letter_id in range(0, len(letters)):
-            possible_strings = calculate_all_adjacent_strings(connected_letters, letter_id, [], "")
-            for pos_str in possible_strings:
-                all_possible_strings.append(pos_str)
-
-    
-        step2= time.perf_counter_ns()
-
-        possible_words = []
-        possible_words_raw = []
-        for i in range(0, len(all_possible_strings)):
-            string_ids = all_possible_strings[i]
-            my_str = ""
-            for index in string_ids:
-                my_str += letters[index].char
-
-            if generator.is_valid_word(my_str):
-                letters_in_word = map(lambda let_id: letters[let_id], string_ids)
-                possible_words.append(list(letters_in_word))
-                possible_words_raw.append(my_str)
-
-
-        step3 = time.perf_counter_ns()
-        
-        word_combo=get_best_combo([], possible_words)
-        last_frame_word_combo = word_combo
-        
-        words_raw=""
-        for word in word_combo:
-            for let in word:
-                words_raw+=let.char
-            words_raw+=", "
-        #print(words_raw)
-            
-        
-        end = time.perf_counter_ns()
-
-        """
-        print(connected_letters)
-        print("\n")
-        # print(all_possible_strings)
-        # print(all_strs)
-        # print(possible_words)
-        print(possible_words_raw)
-        print(w)
-        print("Took", (end-start) / 1_000_000, "ms")
-        print("Step1 took", (step1-start) / 1_000_000, "ms")
-        print("Step2 took", (step2-step1) / 1_000_000, "ms")
-        print("Step3 took", (step3-step2) / 1_000_000, "ms")
-        print("Step4 took", (now-step3) / 1_000_000, "ms")
-        """
-                        
-        strings=""
-        for let in unused_letters_in_combo(word_combo, letters):
-            strings+=let.char+", "
-            let.connected=False
-        #print(strings)
-        
-        #add colors back in to available_colors if no connected letters are already using them
-        for let in letters:
-            if not let.color in available_colors:
-                available=True
-                for let2 in letters:
-                    if let2!=let and let2.color==let.color and let2.connected==True:
-                        available=False
-                if available:
-                    available_colors.append(let.color)
-                            
-        #Blit word connections to screen
-        for word in word_combo:
-            color=(100, 100, 100)
-            for i in range(0, len(word)-1):
-                left_letter = word[i]
-                right_letter = word[i+1]
-
-                pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
+            str2="Here are the instructions for how to play. They explain how the game works and everything you need to know to play the game."
+            str2+=" "
+            while " " in str2:
+                substr=""
+                txt=paragraph_font.render(substr, True, (0, 0, 0))
+                txt_rect=txt.get_rect()
+                while txt_rect.width<scr_width-150-50 and " " in str2:
+                    substr=substr+str2[:str2.index(" ")+1]
+                    str2=str2[str2.index(" ")+1:]
+                    txt=paragraph_font.render(substr, True, (0, 0, 0))
+                    txt_rect=txt.get_rect()
+                txt_rect.center=(scr_width/2, ypos+(txt_rect.height/2))
+                screen.blit(txt, txt_rect)
+                ypos+=txt_rect.height/2+15
                 
-                if (left_letter.color in available_colors or left_letter.connected==True) and left_letter.color!=(100, 100, 100):
-                    color=left_letter.color
-                    
-                if left_letter.connected==False:
-                    left_letter.connected=True
-                    
-            if word[len(word)-1].connected==False: # check this one because loop only goes to len(word)-1 and it was skipped
-                word[len(word)-1].connected=True
-                                        
-            if color==(100, 100, 100):
-                if len(available_colors)>0:
-                    color=random.choice(available_colors)
-                else:
-                    color=word[0].color
-            if color in available_colors:
-                available_colors.remove(color)
-            for let in word:
-                let.color=color
-        
-        # Blit the letters to screen
-        for i in range(0, len(letters)):
-            screen.blit(letters[i].generate_font(), letters[i].rect)
+            play_button=button_font.render("PLAY", True, (0, 0, 0))
+            play_button_rect=play_button.get_rect()
+            play_button_rect.width+=20
+            play_button_rect.height+=20
+            play_button_rect.center=(scr_width/2, scr_height-75-20-(play_button_rect.height/2))
             
-        # Blit the explosion timer to screen
-        explosion_candle_rect = Rect(0,0, explosion_relative_time_left * scr_width, 0.025*scr_height)
-        pygame.draw.rect(screen, (0,0,255), explosion_candle_rect)
+            if mousex>=play_button_rect.left and mousex<=play_button_rect.right and mousey>=play_button_rect.top and mousey<=play_button_rect.bottom:
+                if mouse_hold_down:
+                    game_playing=True
+                else:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                    pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 0, 5) # invert button colors if hovering over it
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 3, 5)     
+            
+            screen.blit(play_button, play_button_rect)
         
-        # Blit words used to screen
-        ycoord=explosion_candle_rect.height+5
-        words_used_header = debug_font.render("Words Used", False, (0, 0, 0))
-        screen.blit(words_used_header, (5, ycoord))
-        for word in words_used:
-            word_txt = debug_font.render(word, False, (0, 0, 0))
-            ycoord+=debug_font.get_height()
-            screen.blit(word_txt, (5, ycoord))
+        if game_playing and not game_over:
 
-        # Display debug info
-        frame_duration_display = debug_font.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
-        screen.blit(frame_duration_display,(0,scr_height - debug_font_size))
+            if not mouse_hold_down:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                drag_rect = None #drag nothing
 
+                hover_rect = None
+                nearest_rect = (None, 0) # (rect id, distance from mouse)
+                for let in letters:
+                    (x, y) = let.coords()
+                    dist = math.hypot(x - mousex, y - mousey)
+                    # print(i, "distance", dist)
+                    if dist < nearest_rect[1] or nearest_rect[0] == None:
+                        nearest_rect = (let.rect, dist)
+                # print("mouse down nearest rect", nearest_rect)
+                # print(words[nearest_rect[0]])
+                if nearest_rect[1] < drag_threshold:
+                    hover_rect = nearest_rect[0]
+
+            if mouse_click_down and hover_rect != None:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                drag_rect = hover_rect
+
+            # Update the dragged letter's pos, if we are dragging
+            if drag_rect != None:
+                drag_rect.update(mousex - 0.5*drag_rect.width, mousey - 0.5*drag_rect.height, drag_rect.width, drag_rect.height)
+
+            # Time
+            now = time.perf_counter()
+            frame_duration_in_ms = (now - last_frame_time) * 1000
+            last_frame_time = now
+
+            #Explosion        
+            explosion_relative_time_left = 1 - (now - last_explosion) / time_between_explosions
+            if now - last_explosion > time_between_explosions:
+                last_explosion = now
+                time_between_explosions = 0.9 * time_between_explosions
+
+                # Stop the game if there are no more words to explode
+                if len(last_frame_word_combo) == 0:
+                    game_over=True
+                    game_playing=False
+                    continue
+                
+                word_to_explode = last_frame_word_combo[0]
+                # pick a letter to explode, excluding both endpoint letters
+                letter_num = 0
+                if len(word_to_explode) < 3:
+                    letter_num = random.randint(0,1)
+                else:
+                    letter_num = random.randint(1, len(word_to_explode) - 1)
+
+                letter = word_to_explode[letter_num]
+                previous_char = letter.char
+                choice_alphabet = alphabet.replace(previous_char, "")   # base this on scrabble distribution in WordGenerator instead
+                assert len(choice_alphabet) == 25
+                new_char = random.choice(choice_alphabet)
+                new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
+
+                letters[letters.index(letter)] = new_letter
+                
+                #update words used
+                for word in last_frame_word_combo:
+                    word_raw=""
+                    for let in word:
+                        word_raw+=let.char
+                    if not word_raw in words_used:
+                        words_used.append(word_raw)
+                        generator.remove_word(word_raw)
+
+                # xpos = random.randint(font_size, screen.get_width() - font_size)
+                # ypos = random.randint(font_size, screen.get_height() - font_size)
+                # word_to_explode[letter_num].rect.center = (xpos, ypos)
+
+
+                # Explode a whole word
+                # for letter_to_explode in word_to_explode:
+                #     xpos = random.randint(font_size, screen.get_width() - font_size)
+                #     ypos = random.randint(font_size, screen.get_height() - font_size)
+                #     letter_to_explode.rect.center = (xpos, ypos)
+
+            
+            start = time.perf_counter_ns()
+
+            connected_letters = []
+            for i in range(0, len(letters)):
+    
+                my_connected_letters = []
+                for j in range(0, len(letters)):
+                    if j == i:
+                        pass
+                    else:
+                        if letters[i].isAdjacentAndLeft(letters[j]):
+                            my_connected_letters.append(j)
+                connected_letters.append(my_connected_letters)
+
+            step1 = time.perf_counter_ns()
+
+            all_possible_strings = []
+            for letter_id in range(0, len(letters)):
+                possible_strings = calculate_all_adjacent_strings(connected_letters, letter_id, [], "")
+                for pos_str in possible_strings:
+                    all_possible_strings.append(pos_str)
+
+        
+            step2= time.perf_counter_ns()
+
+            possible_words = []
+            possible_words_raw = []
+            for i in range(0, len(all_possible_strings)):
+                string_ids = all_possible_strings[i]
+                my_str = ""
+                for index in string_ids:
+                    my_str += letters[index].char
+
+                if generator.is_valid_word(my_str):
+                    letters_in_word = map(lambda let_id: letters[let_id], string_ids)
+                    possible_words.append(list(letters_in_word))
+                    possible_words_raw.append(my_str)
+
+
+            step3 = time.perf_counter_ns()
+            
+            word_combo=get_best_combo([], possible_words)
+            last_frame_word_combo = word_combo
+            
+            words_raw=""
+            for word in word_combo:
+                for let in word:
+                    words_raw+=let.char
+                words_raw+=", "
+            #print(words_raw)
+                
+            
+            end = time.perf_counter_ns()
+
+            """
+            print(connected_letters)
+            print("\n")
+            # print(all_possible_strings)
+            # print(all_strs)
+            # print(possible_words)
+            print(possible_words_raw)
+            print(w)
+            print("Took", (end-start) / 1_000_000, "ms")
+            print("Step1 took", (step1-start) / 1_000_000, "ms")
+            print("Step2 took", (step2-step1) / 1_000_000, "ms")
+            print("Step3 took", (step3-step2) / 1_000_000, "ms")
+            print("Step4 took", (now-step3) / 1_000_000, "ms")
+            """
+                            
+            strings=""
+            for let in unused_letters_in_combo(word_combo, letters):
+                strings+=let.char+", "
+                let.connected=False
+            #print(strings)
+            
+            #add colors back in to available_colors if no connected letters are already using them
+            for let in letters:
+                if not let.color in available_colors:
+                    available=True
+                    for let2 in letters:
+                        if let2!=let and let2.color==let.color and let2.connected==True:
+                            available=False
+                    if available:
+                        available_colors.append(let.color)
+                                
+            #Blit word connections to screen
+            for word in word_combo:
+                color=(100, 100, 100)
+                for i in range(0, len(word)-1):
+                    left_letter = word[i]
+                    right_letter = word[i+1]
+
+                    pygame.draw.line(screen, (0,0,0), left_letter.coords(), right_letter.coords(), 3)
+                    
+                    if (left_letter.color in available_colors or left_letter.connected==True) and left_letter.color!=(100, 100, 100):
+                        color=left_letter.color
+                        
+                    if left_letter.connected==False:
+                        left_letter.connected=True
+                        
+                if word[len(word)-1].connected==False: # check this one because loop only goes to len(word)-1 and it was skipped
+                    word[len(word)-1].connected=True
+                                            
+                if color==(100, 100, 100):
+                    if len(available_colors)>0:
+                        color=random.choice(available_colors)
+                    else:
+                        color=word[0].color
+                if color in available_colors:
+                    available_colors.remove(color)
+                for let in word:
+                    let.color=color
+            
+            # Blit the letters to screen
+            for i in range(0, len(letters)):
+                screen.blit(letters[i].generate_font(), letters[i].rect)
+                
+            # Blit the explosion timer to screen
+            explosion_candle_rect = Rect(0,0, explosion_relative_time_left * scr_width, 0.025*scr_height)
+            pygame.draw.rect(screen, (0,0,255), explosion_candle_rect)
+            
+            # Blit words used to screen
+            ycoord=explosion_candle_rect.height+5
+            words_used_header = debug_font.render("Words Used", False, (0, 0, 0))
+            screen.blit(words_used_header, (5, ycoord))
+            for word in words_used:
+                word_txt = debug_font.render(word, False, (0, 0, 0))
+                ycoord+=debug_font.get_height()
+                screen.blit(word_txt, (5, ycoord))
+                
+            # Display debug info
+            frame_duration_display = debug_font.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
+            screen.blit(frame_duration_display,(0,scr_height - debug_font_size))
+                
+        if not game_playing and game_over:
+            pygame.draw.rect(screen, (220, 220, 255), popup)
+            str1="GAME OVER; YOU LOSE"
+            txt1=header_font.render(str1, True, (0, 0, 0))
+            txt1_rect=txt1.get_rect()
+            txt1_rect.center=(scr_width/2, 100+(txt1_rect.height/2))
+            screen.blit(txt1, txt1_rect)
+
+            str2="Score: "
+            txt2=paragraph_font.render(str2, True, (0, 0, 0))
+            txt2_rect=txt2.get_rect()
+            txt2_rect.center=(scr_width/2, txt1_rect.height+100+75)
+            screen.blit(txt2, txt2_rect)
+            
+            play_button=button_font.render("PLAY AGAIN", True, (0, 0, 0))
+            play_button_rect=play_button.get_rect()
+            play_button_rect.width+=20
+            play_button_rect.height+=20
+            play_button_rect.center=((scr_width/2)-(play_button_rect.width/2)-10, scr_height-75-20-(play_button_rect.height/2))
+            
+            exit_button=button_font.render("EXIT", True, (0, 0, 0))
+            exit_button_rect=exit_button.get_rect()
+            exit_button_rect.width+=20
+            exit_button_rect.height+=20
+            exit_button_rect.center=((scr_width/2)+(exit_button_rect.width/2)+10, scr_height-75-20-(exit_button_rect.height/2))
+            
+            if mousex>=play_button_rect.left and mousex<=play_button_rect.right and mousey>=play_button_rect.top and mousey<=play_button_rect.bottom:
+                if mouse_hold_down:
+                    game_playing=True
+                    game_over=False
+                else:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                    pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 0, 5) # invert button colors if hovering over it
+            elif mousex>=exit_button_rect.left and mousex<=exit_button_rect.right and mousey>=exit_button_rect.top and mousey<=exit_button_rect.bottom:
+                if mouse_hold_down:
+                    running=False
+                else:
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                    pygame.draw.rect(screen, (255, 255, 255), exit_button_rect, 0, 5) # invert button colors if hovering over it
+            else:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+                pygame.draw.rect(screen, (255, 255, 255), exit_button_rect, 3, 5)
+                pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 3, 5)
+            
+            screen.blit(play_button, play_button_rect)
+            screen.blit(exit_button, exit_button_rect)
+        
+        print(game_playing," ", game_over)
         pygame.display.flip()
 
         # limit frames per second
