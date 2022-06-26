@@ -10,8 +10,7 @@ import Letter
 TO DO
 -when to add words to list? each time one is formed or when timer runs out (current method)
 -should letters also need to be above letters they come before, the way they need to be to their left?
--actual "you lose" message and option to play again
--more languages (change letters to capitals so we don't need accents)
+-more languages
 -special abilities when you form certain words (palindromes, >5 letters, etc): choose any letter, slow down time, hint, etc
 
 (it's better now that we're not starting out with words, but it can still get pretty bad even if you have like 4-5 really short words)
@@ -21,7 +20,7 @@ What is causing it to be so slow?
 """
 
 def main():
-    alphabet = "abcdefghijklmnopqrstuvwxyz"
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     pygame.init()
     # create a surface on screen that has the size of the computer screen
     pygame.display.set_caption("Our Game")

@@ -7,17 +7,10 @@ class WordGenerator:
         self.shortest_allowed_word_length = shortest_allowed_word_length
 
         word_list=file.readlines()
-        #for i in range(0, len(self.word_list)):
-            #self.word_list[i] = self.word_list[i].replace("\n", "")
-
-        #Iterate backwards over list and delete words that are too short
-        #for i in range(len(self.word_list) - 1, -1, -1):
-            #if len(self.word_list[i]) < self.shortest_allowed_word_length:
-                #self.word_list.pop(i)
 
         self.word_map = {}
         for w in word_list:
-            word=w.replace("\n", "")
+            word=w.replace("\n", "").upper()
             if len(word)>=self.shortest_allowed_word_length:
                 self.word_map[word] = True #the value of the dictionary doesn't matter, only the existence of the key
 
@@ -50,31 +43,31 @@ class WordGenerator:
     def get_scrabble_distribution_for(self, num_letters):
         ratio=num_letters/100  # there are 100 letters in scrabble
         letter_counts_dict={
-            "a" : math.ceil(9*ratio),
-            "b" : math.ceil(2*ratio),
-            "c" : math.ceil(2*ratio),
-            "d" : math.ceil(4*ratio),
-            "e" : math.ceil(12*ratio),
-            "f" : math.ceil(2*ratio),
-            "g" : math.ceil(3*ratio),
-            "h" : math.ceil(2*ratio),
-            "i" : math.ceil(9*ratio),
-            "j" : math.ceil(1*ratio),
-            "k" : math.ceil(1*ratio),
-            "l" : math.ceil(4*ratio),
-            "m" : math.ceil(2*ratio),
-            "n" : math.ceil(6*ratio),
-            "o" : math.ceil(8*ratio),
-            "p" : math.ceil(2*ratio),
-            "q" : math.ceil(1*ratio),
-            "r" : math.ceil(6*ratio),
-            "s" : math.ceil(4*ratio),
-            "t" : math.ceil(6*ratio),
-            "u" : math.ceil(4*ratio),
-            "v" : math.ceil(2*ratio),
-            "w" : math.ceil(2*ratio),
-            "x" : math.ceil(1*ratio),
-            "y" : math.ceil(2*ratio),
-            "z" : math.ceil(1*ratio)
+            "A" : math.ceil(9*ratio),
+            "B" : math.ceil(2*ratio),
+            "C" : math.ceil(2*ratio),
+            "D" : math.ceil(4*ratio),
+            "E" : math.ceil(12*ratio),
+            "F" : math.ceil(2*ratio),
+            "G" : math.ceil(3*ratio),
+            "H" : math.ceil(2*ratio),
+            "I" : math.ceil(9*ratio),
+            "J" : math.ceil(1*ratio),
+            "K" : math.ceil(1*ratio),
+            "L" : math.ceil(4*ratio),
+            "M" : math.ceil(2*ratio),
+            "N" : math.ceil(6*ratio),
+            "O" : math.ceil(8*ratio),
+            "P" : math.ceil(2*ratio),
+            "Q" : math.ceil(1*ratio),
+            "R" : math.ceil(6*ratio),
+            "S" : math.ceil(4*ratio),
+            "T" : math.ceil(6*ratio),
+            "U" : math.ceil(4*ratio),
+            "V" : math.ceil(2*ratio),
+            "W" : math.ceil(2*ratio),
+            "X" : math.ceil(1*ratio),
+            "Y" : math.ceil(2*ratio),
+            "Z" : math.ceil(1*ratio)
         }
         return letter_counts_dict
