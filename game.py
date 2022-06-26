@@ -3,21 +3,18 @@ from pygame.locals import *
 import random
 import math
 import time
-import textwrap
 import WordGenerator
 import Letter
 
 """
 TO DO
--use scrabble distribution when determining which letters to change into
--problem: it is the letters that are part of words that change, and so we end up losing all our vowels
 -when to add words to list? each time one is formed or when timer runs out (current method)
 -should letters also need to be above letters they come before, the way they need to be to their left?
 -actual "you lose" message and option to play again
--more languages
+-more languages (change letters to capitals so we don't need accents)
 -special abilities when you form certain words (palindromes, >5 letters, etc): choose any letter, slow down time, hint, etc
 
-
+(it's better now that we're not starting out with words, but it can still get pretty bad even if you have like 4-5 really short words)
 What is causing it to be so slow?
 -two recursive methods (calculate_all_adjacent_strings() and get_best_combo)?
 -determining color for each letter?
@@ -37,14 +34,13 @@ def main():
     print("Screen dimensions ", scr_width, "x", scr_height)
     
     # === TUNABLE SETTINGS ===
-    font_size = int(min(scr_width, scr_height) / 10)
-    Letter.font_size=font_size
+    Letter.font_size=int(min(scr_width, scr_height) / 10)
     header_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 10))
     paragraph_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 20))
     button_font=pygame.font.SysFont('freesanbold.ttf', int(min(scr_width, scr_height) / 15))
     # print("Font size: ", font_size)
-    font_spacing = int(0.5 * font_size)  #TODO: make this use internal font spacing
-    drag_threshold = 0.5 * font_size
+    font_spacing = int(0.5 * Letter.font_size)  #TODO: make this use internal font spacing
+    drag_threshold = 0.5 * Letter.font_size
 
     SHORTEST_ALLOWED_WORD_LENGTH = 2
     
@@ -60,24 +56,7 @@ def main():
     #available_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 0), (127, 0, 127), (0, 127, 127)]
     available_colors = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 255, 255), (255, 72, 0)]
 
-    letters=[]
-    chars=generator.get_random_chars(25)
-    
-    for char in chars:
-        new_let=Letter.Letter(char, 0, 0)
-        legal_pos=False
-        while not legal_pos:
-            xpos = random.randint(font_size, screen.get_width() - font_spacing)
-            ypos = random.randint(font_size, screen.get_height() - font_size)
-            new_let.rect.center=(xpos, ypos)
-            legal_pos=True
-            for let in letters:
-                if let.isAdjacentAndLeft(new_let) or new_let.isAdjacentAndLeft(let):
-                    legal_pos=False
-                    break
-                    
-        letters.append(new_let)
-
+    letters=create_letters(generator.get_random_chars(25), screen)
     running = True
     game_playing=False
     game_over=False
@@ -87,7 +66,8 @@ def main():
     drag_rect = None
     hover_rect = None
 
-    time_between_explosions = 20 #seconds
+    starting_time_between_explosions = 20 #seconds
+    time_between_explosions=starting_time_between_explosions
     last_explosion = time.perf_counter()
 
     last_frame_word_combo = []
@@ -131,7 +111,7 @@ def main():
             
             str2="Here are the instructions for how to play. They explain how the game works and everything you need to know to play the game."
             str2+=" "
-            while " " in str2:
+            while " " in str2: # wrap words when they don't fit on a line
                 substr=""
                 txt=paragraph_font.render(substr, True, (0, 0, 0))
                 txt_rect=txt.get_rect()
@@ -146,19 +126,18 @@ def main():
                 
             play_button=button_font.render("PLAY", True, (0, 0, 0))
             play_button_rect=play_button.get_rect()
-            play_button_rect.width+=20
-            play_button_rect.height+=20
-            play_button_rect.center=(scr_width/2, scr_height-75-20-(play_button_rect.height/2))
+            play_button_rect.center=(scr_width/2, scr_height-75-40-(play_button_rect.height/2))
+            play_button_background=Rect(play_button_rect.center[0]-(play_button_rect.width/2)-30, play_button_rect.center[1]-(play_button_rect.height/2)-15, play_button_rect.width+60, play_button_rect.height+30)
             
-            if mousex>=play_button_rect.left and mousex<=play_button_rect.right and mousey>=play_button_rect.top and mousey<=play_button_rect.bottom:
+            if mousex>=play_button_background.left and mousex<=play_button_background.right and mousey>=play_button_background.top and mousey<=play_button_background.bottom:
                 if mouse_hold_down:
                     game_playing=True
                 else:
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-                    pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 0, 5) # invert button colors if hovering over it
+                    pygame.draw.rect(screen, (180, 180, 255), play_button_background, 0, 6) # invert button colors if hovering over it
             else:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-                pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 3, 5)     
+                pygame.draw.rect(screen, (150, 150, 255), play_button_background, 0, 6)   
             
             screen.blit(play_button, play_button_rect)
         
@@ -216,9 +195,13 @@ def main():
 
                 letter = word_to_explode[letter_num]
                 previous_char = letter.char
-                choice_alphabet = alphabet.replace(previous_char, "")   # base this on scrabble distribution in WordGenerator instead
-                assert len(choice_alphabet) == 25
-                new_char = random.choice(choice_alphabet)
+                #choice_alphabet = alphabet.replace(previous_char, "")   # base this on scrabble distribution in WordGenerator instead
+                #assert len(choice_alphabet) == 25
+                #new_char = random.choice(choice_alphabet)
+                existing_chars=[]
+                for let in letters:
+                    existing_chars.append(let.char)
+                new_char=generator.get_random_chars(1, existing_chars)[0]
                 new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
 
                 letters[letters.index(letter)] = new_letter
@@ -394,38 +377,48 @@ def main():
             
             play_button=button_font.render("PLAY AGAIN", True, (0, 0, 0))
             play_button_rect=play_button.get_rect()
-            play_button_rect.width+=20
-            play_button_rect.height+=20
-            play_button_rect.center=((scr_width/2)-(play_button_rect.width/2)-10, scr_height-75-20-(play_button_rect.height/2))
+            play_button_rect.center=((scr_width/2)-(play_button_rect.width/2)-60, scr_height-75-40-(play_button_rect.height/2))
+            play_button_background=Rect(play_button_rect.center[0]-(play_button_rect.width/2)-30, play_button_rect.center[1]-(play_button_rect.height/2)-15, play_button_rect.width+60, play_button_rect.height+30)
             
             exit_button=button_font.render("EXIT", True, (0, 0, 0))
             exit_button_rect=exit_button.get_rect()
-            exit_button_rect.width+=20
-            exit_button_rect.height+=20
-            exit_button_rect.center=((scr_width/2)+(exit_button_rect.width/2)+10, scr_height-75-20-(exit_button_rect.height/2))
+            exit_button_rect.center=((scr_width/2)+((scr_width/2)-play_button_rect.center[0]), play_button_rect.center[1])
+            exit_button_background=Rect(exit_button_rect.center[0]-(play_button_background.width/2), exit_button_rect.center[1]-(play_button_background.height/2), play_button_background.width, play_button_background.height)
             
-            if mousex>=play_button_rect.left and mousex<=play_button_rect.right and mousey>=play_button_rect.top and mousey<=play_button_rect.bottom:
+            play_button_hover = mousex>=play_button_background.left and mousex<=play_button_background.right and mousey>=play_button_background.top and mousey<=play_button_background.bottom
+            exit_button_hover = mousex>=exit_button_background.left and mousex<=exit_button_background.right and mousey>=exit_button_background.top and mousey<=exit_button_background.bottom
+                        
+            if play_button_hover:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                pygame.draw.rect(screen, (180, 180, 255), play_button_background, 0, 6) # invert button colors if hovering over it
                 if mouse_hold_down:
                     game_playing=True
                     game_over=False
-                else:
-                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-                    pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 0, 5) # invert button colors if hovering over it
-            elif mousex>=exit_button_rect.left and mousex<=exit_button_rect.right and mousey>=exit_button_rect.top and mousey<=exit_button_rect.bottom:
+                    #reset variables
+                    words_used=[]
+                    available_colors = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 255, 255), (255, 72, 0)]
+                    letters=create_letters(generator.get_random_chars(25), screen)
+                    drag_rect = None
+                    hover_rect = None
+                    time_between_explosions=starting_time_between_explosions
+                    last_explosion = time.perf_counter()
+                    last_frame_word_combo = []
+                    last_frame_time = time.perf_counter()
+            else:
+                pygame.draw.rect(screen, (150, 150, 255), play_button_background, 0, 6)
+            if exit_button_hover:
+                pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                pygame.draw.rect(screen, (180, 180, 255), exit_button_background, 0, 6) # invert button colors if hovering over it
                 if mouse_hold_down:
                     running=False
-                else:
-                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-                    pygame.draw.rect(screen, (255, 255, 255), exit_button_rect, 0, 5) # invert button colors if hovering over it
             else:
+                pygame.draw.rect(screen, (150, 150, 255), exit_button_background, 0, 6)
+            if not play_button_hover and not exit_button_hover:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-                pygame.draw.rect(screen, (255, 255, 255), exit_button_rect, 3, 5)
-                pygame.draw.rect(screen, (255, 255, 255), play_button_rect, 3, 5)
             
             screen.blit(play_button, play_button_rect)
             screen.blit(exit_button, exit_button_rect)
         
-        print(game_playing," ", game_over)
         pygame.display.flip()
 
         # limit frames per second
@@ -464,6 +457,22 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, ta
     visited.remove(starting_point)
     return results
 
+def create_letters(chars, screen):
+    letters=[]
+    for char in chars:
+        new_let=Letter.Letter(char, 0, 0)
+        legal_pos=False
+        while not legal_pos:
+            xpos = random.randint(Letter.font_size, screen.get_width() - Letter.font_size)
+            ypos = random.randint(Letter.font_size, screen.get_height() - Letter.font_size) # to do: also make sure letter doesn't intersect word list on left
+            new_let.rect.center=(xpos, ypos)
+            legal_pos=True
+            for let in letters:
+                if let.isAdjacentAndLeft(new_let) or new_let.isAdjacentAndLeft(let):
+                    legal_pos=False
+                    break         
+        letters.append(new_let)
+    return letters
 
 def get_best_combo(words_in_combo, possible_words):
     best_combo=words_in_combo

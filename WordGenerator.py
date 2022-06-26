@@ -33,35 +33,12 @@ class WordGenerator:
     
     def remove_word(self, word):
         self.word_map.pop(word)
-            
-    def get_random_word_list(self, num_words, min_length=None, max_length=None): 
-        random_word_list=[]
-        if max_length is None:
-            max_possible_letters=num_words*self.longest_word_len()
-        else:
-            max_possible_letters=num_words*max_length
-        letter_counts_dict=self.get_scrabble_distribution_for(max_possible_letters, max_length)
-        for x in range(0, num_words):
-            legal_word=False
-            while not legal_word:
-                legal_word=True
-                word=random.choice(list(self.word_map))
-                if min_length is not None and max_length is not None:
-                    if len(word)<min_length or len(word)>max_length:
-                        legal_word=False
-                for char in word:
-                    char=char.lower()
-                    if char in letter_counts_dict and letter_counts_dict[char]<=0:
-                        legal_word=False
-            random_word_list.append(word)
-            for char in word:
-                char=char.lower()
-                if char in letter_counts_dict:
-                    letter_counts_dict[char]=letter_counts_dict[char]-1
-        return random_word_list
     
-    def get_random_chars(self, num):
+    def get_random_chars(self, num, existing_chars=[]):
         letter_counts_dict=self.get_scrabble_distribution_for(num)
+        for char in existing_chars: # only runs if existing_chars argument was passed
+            if char in letter_counts_dict:
+                letter_counts_dict[char]=letter_counts_dict[char]-1
         chars=[]
         while len(chars)<num:
             char=random.choice(list(letter_counts_dict))
