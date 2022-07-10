@@ -1,11 +1,10 @@
 import pygame
 from pygame import Rect
 
-from game import Scene
+from utils import GameEvent
+
 
 def start_screen(screen, game_input, fonts, common_gui):
-
-    should_begin_next_scene = False
 
     scr_width = screen.get_width()
     scr_height = screen.get_height()
@@ -45,7 +44,10 @@ def start_screen(screen, game_input, fonts, common_gui):
         
         if game_input.mouse_hold_down:
             # Start playing
-            should_begin_next_scene = True
+            success = pygame.event.post(pygame.event.Event(GameEvent.StartGame))
+            print(success)
+
+
         else:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
             pygame.draw.rect(screen, (180, 180, 255), play_button_background, 0, 6) # invert button colors if hovering over it
@@ -54,5 +56,3 @@ def start_screen(screen, game_input, fonts, common_gui):
         pygame.draw.rect(screen, (150, 150, 255), play_button_background, 0, 6)   
     
     screen.blit(play_button, play_button_rect)
-
-    return should_begin_next_scene

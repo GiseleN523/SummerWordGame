@@ -1,18 +1,41 @@
 import random
 import math
+import time
 
 class WordGenerator:
     def __init__(self, filename, shortest_allowed_word_length):
+
+        # start_time = time.perf_counter_ns()
+
         file=open(filename, "r") # read file
         self.shortest_allowed_word_length = shortest_allowed_word_length
 
         word_list=file.readlines()
 
         self.word_map = {}
+
+        # Holds keys to all word snippets that exist where the snippet must
+        # start at the beginning of the word
+        # Used to filter out strings as non-words
+        self.word_snippet_map = {}
+
         for w in word_list:
             word=w.replace("\n", "").upper()
             if len(word)>=self.shortest_allowed_word_length:
-                self.word_map[word] = True #the value of the dictionary doesn't matter, only the existence of the key
+                #the value of the dictionary doesn't matter, only the existence of the key                
+                self.word_map[word] = True 
+
+                snippet = ""
+                for letter in word:
+                    snippet += letter
+                    self.word_snippet_map[snippet] = True
+
+        # end_time = time.perf_counter_ns()
+
+        # print("Took", int( (end_time - start_time) / 1_000_000), "ms to create word hashmaps")
+
+        # print(len(self.word_snippet_map))
+        
 
     def longest_word_len(self):
         longest_word=""
@@ -23,6 +46,9 @@ class WordGenerator:
 
     def is_valid_word(self, word):
         return word in self.word_map
+
+    def is_valid_word_front_snippet(self, snippet):
+        return snippet in self.word_snippet_map
     
     def remove_word(self, word):
         self.word_map.pop(word)

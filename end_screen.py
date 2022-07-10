@@ -1,9 +1,9 @@
 import pygame
-from pygame import Rect
+from pygame import QUIT, Rect
+
+from utils import GameEvent
 
 def end_screen(screen, game_input, fonts, common_gui):
-
-    trigger_next_scene = (False, "")
 
     pygame.draw.rect(screen, (220, 220, 255), common_gui.popup)
     str1="GAME OVER; YOU LOSE"
@@ -41,19 +41,19 @@ def end_screen(screen, game_input, fonts, common_gui):
     if play_button_hover:
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
         pygame.draw.rect(screen, (180, 180, 255), play_button_background, 0, 6) # invert button colors if hovering over it
+
+
         if game_input.mouse_hold_down:
-
-            trigger_next_scene = (True, "playing")
-
+            pygame.event.post(pygame.event.Event(GameEvent.StartGame))
 
     else:
         pygame.draw.rect(screen, (150, 150, 255), play_button_background, 0, 6)
     if exit_button_hover:
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
         pygame.draw.rect(screen, (180, 180, 255), exit_button_background, 0, 6) # invert button colors if hovering over it
-        if game_input.mouse_hold_down:
 
-            trigger_next_scene = (True, "quit")
+        if game_input.mouse_hold_down:
+            pygame.event.post(pygame.event.Event(QUIT, attr1="Quit"))
 
     else:
         pygame.draw.rect(screen, (150, 150, 255), exit_button_background, 0, 6)
@@ -62,6 +62,3 @@ def end_screen(screen, game_input, fonts, common_gui):
     
     screen.blit(play_button, play_button_rect)
     screen.blit(exit_button, exit_button_rect)
-
-
-    return trigger_next_scene
