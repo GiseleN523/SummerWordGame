@@ -16,7 +16,7 @@ import Letter
 SHORTEST_ALLOWED_WORD_LENGTH = 2
 ALL_COLORS = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 255, 255), (255, 72, 0)]
 
-STARTING_TIME_BETWEEN_EXPLOSIONS = 5 #20 #seconds
+STARTING_TIME_BETWEEN_EXPLOSIONS = 20 #seconds
 
 DRAG_THRESHOLD_MOD = 0.5
 
@@ -86,7 +86,7 @@ class Gameplay:
         explosion_relative_time_left = 1 - (game_time - self.last_explosion) / self.time_between_explosions
         if game_time - self.last_explosion > self.time_between_explosions:
             self.last_explosion = game_time
-            self.time_between_explosions = 0.9 * self.time_between_explosions
+            self.time_between_explosions = 0.95 * self.time_between_explosions
 
 
             # Stop the game if there are no more words to explode
@@ -94,7 +94,7 @@ class Gameplay:
                 pygame.event.post(pygame.event.Event(GameEvent.GameOver))
                 return
             
-            word_to_explode = self.last_frame_word_combo[0]
+            '''word_to_explode = self.last_frame_word_combo[0]
             # pick a letter to explode, excluding both endpoint letters
             letter_num = 0
             if len(word_to_explode) < 3:
@@ -113,16 +113,26 @@ class Gameplay:
             new_char= self.word_generator.get_random_chars(1, existing_chars)[0]
             new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1], self.letter_radius)
 
-            self.letters[self.letters.index(letter)] = new_letter
+            self.letters[self.letters.index(letter)] = new_letter'''
             
             #update words used
-            for word in self.last_frame_word_combo:
+            '''for word in self.last_frame_word_combo:
                 word_raw=""
                 for let in word:
                     word_raw+=let.char
                 if not word_raw in self.words_used:
                     self.words_used.append(word_raw)
-                    self.word_generator.remove_word(word_raw)
+                    self.word_generator.remove_word(word_raw)'''
+            shortest_word=self.last_frame_word_combo[0]
+            for word in self.last_frame_word_combo:
+                if len(word)<len(shortest_word):
+                    shortest_word=word
+            word_raw=""
+            for let in shortest_word:
+                word_raw=word_raw+let.char
+            if not word_raw in self.words_used:
+                self.words_used.append(word_raw)
+                self.word_generator.remove_word(word_raw)
 
             # xpos = random.randint(font_size, screen.get_width() - font_size)
             # ypos = random.randint(font_size, screen.get_height() - font_size)
