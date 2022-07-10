@@ -6,14 +6,15 @@ import math
 import time
 import enum
 
-import WordGenerator
+from utils import GameFonts, CommonGui, GameInput, GameEvent
+
 import Letter
 import Gameplay
-
 import start_screen
 import end_screen
 
 """
+
 TO DO
 -when to add words to list? each time one is formed or when timer runs out (current method)
 -should letters also need to be above letters they come before, the way they need to be to their left?
@@ -26,36 +27,6 @@ What is causing it to be so slow?
 -determining color for each letter?
 """
 
-class Scene(enum.Enum):
-    StartScreen = 1
-    Playing = 2
-    EndScreen = 3
-
-
-class Fonts:
-    def __init__(self, screen):
-        min_screen_distance = min(screen.get_width(), screen.get_height())
-        header_font_size = int(min_screen_distance / 10)
-        paragraph_font_size = int(min_screen_distance / 20)
-        button_font_size = int(min_screen_distance / 15)
-        
-        debug_font_size = int(min_screen_distance / 30)
-
-        self.header = pygame.font.SysFont('freesanbold.ttf', header_font_size)
-        self.paragraph = pygame.font.SysFont('freesanbold.ttf', paragraph_font_size)
-        self.button = pygame.font.SysFont('freesanbold.ttf', button_font_size)
-        self.debug = pygame.font.SysFont('freesanbold.ttf', debug_font_size)
-
-class CommonGui:
-    def __init__(self, screen):
-        self.popup=Rect(75, 75, screen.get_width()-150, screen.get_height()-150)
-
-class GameInput:
-    def __init__(self, mouse_x, mouse_y, mouse_hold_down, mouse_click_down):
-        self.mouse_x = mouse_x
-        self.mouse_y = mouse_y
-        self.mouse_hold_down = mouse_hold_down
-        self.mouse_click_down = mouse_click_down
 
 
 def main():
@@ -73,27 +44,18 @@ def main():
     print("Screen dimensions ", scr_width, "x", scr_height)
     
     # === TUNABLE SETTINGS ===
-    Letter.font_size=int(min(scr_width, scr_height) / 10)
+
 
     game_scene = "start_screen"
-    fonts = Fonts(screen)
+    fonts = GameFonts(screen)
     common_gui = CommonGui(screen)
-
-
-    # print("Font size: ", font_size)
-    font_spacing = int(0.5 * Letter.font_size)  #TODO: make this use internal font spacing
     
-    #words_raw = generator.get_random_word_list(2)
-    
-    
-    #available_colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (127, 127, 0), (127, 0, 127), (0, 127, 127)]
 
     running = True
-
     mouse_hold_down = False
-    
+    last_frame_time = time.perf_counter()
 
-    gameplay = Gameplay.Gameplay()
+    gameplay = Gameplay.Gameplay(screen)
 
 
     while running:
@@ -117,39 +79,46 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 mouse_hold_down = False
 
+            if event.type == GameEvent.StartGame:
+                game_scene = "playing"
+                gameplay.on_game_start(screen, time.perf_counter())
+
+                
+            if event.type == GameEvent.GameOver:
+                game_scene = "end_screen"
+
+
         game_input = GameInput(mousex, mousey, mouse_hold_down, mouse_click_down)
-        
 
         # === GAME LOGIC and RENDER ===
         # clear display
         screen.fill((255, 255, 255))
         
+        
         if game_scene == "start_screen":
-            next_scene = start_screen.start_screen(screen, game_input, fonts, common_gui)
-
-            if next_scene:
-                game_scene = "playing"                
-                gameplay.on_game_start(screen)
+            start_screen.start_screen(screen, game_input, fonts, common_gui)
         
         elif game_scene == "playing":
-            next_scene = gameplay.playing(screen, game_input, fonts, common_gui)
+            gameplay.playing(screen, game_input, fonts, common_gui, time.perf_counter())
 
-            if next_scene:
-                game_scene = "end_screen"
-                
         elif game_scene == "end_screen":
+            end_screen.end_screen(screen, game_input, fonts, common_gui)
 
-            (next_scene, next_scene_name) = end_screen.end_screen(screen, game_input, fonts, common_gui)
 
-            if next_scene:
-                if next_scene_name == "playing":
-                    game_scene = next_scene_name
-                    gameplay.on_game_start(screen)
-                elif next_scene_name == "quit":
-                    running = False
-        
-        
+
+        # Time
+        now = time.perf_counter()
+        frame_duration_in_ms = (now - last_frame_time) * 1000
+        last_frame_time = now
+
+        # Display debug info
+        frame_duration_display = fonts.debug.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
+        screen.blit(frame_duration_display,(0,screen.get_height() - fonts.debug.size("")[1]))
+
+
+
         pygame.display.flip()
+
 
         # limit frames per second
         clock.tick(60)

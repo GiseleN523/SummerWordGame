@@ -6,6 +6,7 @@ import random
 import time
 
 
+from utils import GameEvent
 import WordGenerator
 import Letter
 
@@ -15,41 +16,44 @@ ALL_COLORS = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 
 
 STARTING_TIME_BETWEEN_EXPLOSIONS = 5 #20 #seconds
 
+DRAG_THRESHOLD_MOD = 0.5
+
 
 class Gameplay:
 
 
-    def __init__(self):
+    def __init__(self, screen):
         self.word_generator= WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
 
 
-    def on_game_start(self, screen):
+    def on_game_start(self, screen, game_time):
         self.words_used=[]
-
-        self.letters= create_letters(self.word_generator.get_random_chars(25), screen)
         self.available_colors = ALL_COLORS
 
         # None if not dragging/hovering over anything, otherwise the id of the rect in the list
         self.drag_rect = None
         self.hover_rect = None
 
-        self.drag_threshold = 0.5 * Letter.font_size
-
         self.time_between_explosions= STARTING_TIME_BETWEEN_EXPLOSIONS
-        self.last_explosion = time.perf_counter()
+        self.last_explosion = game_time
+
 
         self.last_frame_word_combo = []
 
-        self.last_frame_time = time.perf_counter()
+        self.letter_radius = int(min(screen.get_width(), screen.get_height()) / 10)
+
+
+        starting_letters = self.word_generator.get_random_chars(25)
+        self.letters= create_letters(starting_letters, screen.get_width(), screen.get_height(), self.letter_radius)
 
 
 
 
-    def playing(self, screen, game_input, fonts, common_gui):
+    def playing(self, screen, game_input, fonts, common_gui, game_time):
 
         if not game_input.mouse_hold_down:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-            drag_rect = None #drag nothing
+            self.drag_rect = None #drag nothing
 
             self.hover_rect = None
             nearest_rect = (None, 0) # (rect id, distance from mouse)
@@ -61,7 +65,10 @@ class Gameplay:
                     nearest_rect = (let.rect, dist)
             # print("mouse down nearest rect", nearest_rect)
             # print(words[nearest_rect[0]])
-            if nearest_rect[1] < self.drag_threshold:
+
+            drag_threshold = DRAG_THRESHOLD_MOD * self.letter_radius
+
+            if nearest_rect[1] < drag_threshold:
                 self.hover_rect = nearest_rect[0]
 
         if game_input.mouse_click_down and self.hover_rect != None:
@@ -72,20 +79,18 @@ class Gameplay:
         if self.drag_rect != None:
             self.drag_rect.update(game_input.mouse_x - 0.5*self.drag_rect.width, game_input.mouse_y - 0.5*self.drag_rect.height, self.drag_rect.width, self.drag_rect.height)
 
-        # Time
-        now = time.perf_counter()
-        frame_duration_in_ms = (now - self.last_frame_time) * 1000
-        self.last_frame_time = now
 
-        #Explosion        
-        explosion_relative_time_left = 1 - (now - self.last_explosion) / self.time_between_explosions
-        if now - self.last_explosion > self.time_between_explosions:
-            self.last_explosion = now
+        #Explosion
+        explosion_relative_time_left = 1 - (game_time - self.last_explosion) / self.time_between_explosions
+        if game_time - self.last_explosion > self.time_between_explosions:
+            self.last_explosion = game_time
             self.time_between_explosions = 0.9 * self.time_between_explosions
+
 
             # Stop the game if there are no more words to explode
             if len(self.last_frame_word_combo) == 0:
-                return True #Yes, move to end screen
+                pygame.event.post(pygame.event.Event(GameEvent.GameOver))
+                return
             
             word_to_explode = self.last_frame_word_combo[0]
             # pick a letter to explode, excluding both endpoint letters
@@ -104,7 +109,7 @@ class Gameplay:
             for let in self.letters:
                 existing_chars.append(let.char)
             new_char= self.word_generator.get_random_chars(1, existing_chars)[0]
-            new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1])
+            new_letter = Letter.Letter(new_char, letter.coords()[0], letter.coords()[1], self.letter_radius)
 
             self.letters[self.letters.index(letter)] = new_letter
             
@@ -131,41 +136,17 @@ class Gameplay:
         
         start = time.perf_counter_ns()
 
-        connected_letters = []
-        for i in range(0, len(self.letters)):
-
-            my_connected_letters = []
-            for j in range(0, len(self.letters)):
-                if j == i:
-                    pass
-                else:
-                    if self.letters[i].isAdjacentAndLeft(self.letters[j]):
-                        my_connected_letters.append(j)
-            connected_letters.append(my_connected_letters)
+        connected_letters = generate_connection_graph(self.letters)
 
         step1 = time.perf_counter_ns()
 
-        all_possible_strings = []
-        for letter_id in range(0, len(self.letters)):
-            possible_strings = calculate_all_adjacent_strings(connected_letters, letter_id, [], "")
-            for pos_str in possible_strings:
-                all_possible_strings.append(pos_str)
+
 
 
         step2= time.perf_counter_ns()
 
-        possible_words = []
-        possible_words_raw = []
-        for i in range(0, len(all_possible_strings)):
-            string_ids = all_possible_strings[i]
-            my_str = ""
-            for index in string_ids:
-                my_str += self.letters[index].char
 
-            if self.word_generator.is_valid_word(my_str):
-                letters_in_word = map(lambda let_id: self.letters[let_id], string_ids)
-                possible_words.append(list(letters_in_word))
-                possible_words_raw.append(my_str)
+        possible_words = calculate_all_possible_words_from_graph(self.letters, connected_letters, self.word_generator)
 
 
         step3 = time.perf_counter_ns()
@@ -259,56 +240,22 @@ class Gameplay:
             ycoord+=fonts.debug.get_height()
             screen.blit(word_txt, (5, ycoord))
             
-        # Display debug info
-        frame_duration_display = fonts.debug.render('Frame dur: ' + str(int(frame_duration_in_ms)), False, (0, 0, 0))
-        screen.blit(frame_duration_display,(0,screen.get_height() - fonts.debug.size("")[1]))
-
-        return False
 
 
 
-def calculate_all_adjacent_strings(connection_graph, starting_point, visited, tab):
-    results = []
-    visited.append(starting_point)
-
-    #We also append shorter strings
-    results.append(visited.copy())
-
-    connections = connection_graph[starting_point]
-
-    valid_connections = []
-    invalid = []
-    for con in connections:
-        if not con in visited:
-            valid_connections.append(con)
-        else:
-            invalid.append(con)
-
-    # print(tab, starting_point, valid_connections, "        but not:", invalid)
-    new_tab = tab + " |"
-
-    if len(valid_connections) == 0:
-        #turn around
-        pass
-    else:
-        for letter_id in valid_connections:
-            new_results = calculate_all_adjacent_strings(connection_graph, letter_id, visited, new_tab)
-            for new_result in new_results:
-                results.append(new_result)
-            # print(tab, starting_point, letter_id)
-
-    visited.remove(starting_point)
-    return results
 
 
-def create_letters(chars, screen):
+
+
+def create_letters(chars, screen_width, screen_height, letter_radius):
     letters=[]
     for char in chars:
-        new_let=Letter.Letter(char, 0, 0)
+        new_let=Letter.Letter(char, 0, 0, letter_radius)
         legal_pos=False
         while not legal_pos:
-            xpos = random.randint(Letter.font_size, screen.get_width() - Letter.font_size)
-            ypos = random.randint(Letter.font_size, screen.get_height() - Letter.font_size) # to do: also make sure letter doesn't intersect word list on left
+            # TODO: also make sure letter doesn't intersect word list on left
+            xpos = random.randint(letter_radius, screen_width - letter_radius)
+            ypos = random.randint(letter_radius, screen_height - letter_radius)
             new_let.rect.center=(xpos, ypos)
             legal_pos=True
             for let in letters:
@@ -317,6 +264,77 @@ def create_letters(chars, screen):
                     break         
         letters.append(new_let)
     return letters
+
+
+
+def string_from_letter_indices(letters, indices):
+    return ''.join(list(map(lambda id: letters[id].char, indices)))
+
+
+
+def generate_connection_graph(letters):
+    connected_letters = []
+    for i in range(0, len(letters)):
+
+        my_connected_letters = []
+        for j in range(0, len(letters)):
+            if j == i:
+                pass
+            else:
+                if letters[i].isAdjacentAndLeft(letters[j]):
+                    my_connected_letters.append(j)
+        connected_letters.append(my_connected_letters)
+
+    return connected_letters
+
+
+def calculate_all_possible_words_from_graph(letters, connected_letters, word_generator):
+
+    possible_words = []
+    for letter in letters:
+        new_words = calculate_all_adjacent_strings(connected_letters, 0, [], letters, word_generator)
+
+        possible_words.extend(new_words)
+
+    return possible_words
+
+
+def calculate_all_adjacent_strings(connection_graph, starting_point, visited, letters, word_generator):
+    results = []
+    visited.append(starting_point)
+
+    # If we don't traverse the graph any further, what we have is still a string
+    snippet_base = string_from_letter_indices(letters, visited)
+
+    if word_generator.is_valid_word(snippet_base):
+        results.append(visited.copy())
+
+    # A list of all letters (as int ids) that I connect to
+    connections = connection_graph[starting_point]
+
+    valid_connections = []
+    # snippet_base = ''.join(list(map(lambda id: letters[id].char, visited)))
+    # print(snippet_base)
+
+    for connection in connections:
+        if connection not in visited:
+
+            snippet = snippet_base + letters[connection].char
+            if word_generator.is_valid_word_front_snippet(snippet):
+
+                new_results = calculate_all_adjacent_strings(connection_graph, connection, visited, letters, word_generator)
+                for new_result in new_results:
+                    results.append(new_result)
+
+    # Remove the last element of the list, presumably me
+    visited.pop(-1)
+
+    return results
+
+
+
+
+
 
 def get_best_combo(words_in_combo, possible_words):
     best_combo=words_in_combo
@@ -357,3 +375,66 @@ def unused_letters_in_combo(combo, possible_letters):
         if not present:
             unused.append(let)
     return unused
+
+
+
+
+def test_word_finder_performance():
+
+    setup_start = time.perf_counter_ns()
+
+    # Mock setup
+    pygame.init()
+    word_generator= WordGenerator.WordGenerator("wordlist.txt", SHORTEST_ALLOWED_WORD_LENGTH)
+
+    setup_end = time.perf_counter_ns()
+
+    # print("Took", int((setup_end - setup_start) / 1_000_000), "ms to setup test")
+
+
+    letters = []
+    for i in range(0, 2):
+        word = random.choice(list(word_generator.word_map.keys()))
+        print(word)
+        offset = 0
+        for letter in word:
+            letters.append(Letter.Letter(letter, offset, i*9, 10))
+            offset += 5
+
+    # print(letters)
+
+    start = time.perf_counter_ns()
+
+    connected_letters = generate_connection_graph(letters)
+    # print("Connection graph", connected_letters)
+
+    graph_complete = time.perf_counter_ns()
+
+
+    possible_words = calculate_all_possible_words_from_graph(letters, connected_letters, word_generator)
+
+    # [print(string_from_letter_indices(letters, my_str)) for my_str in possible_words]
+    
+    possible_words_complete = time.perf_counter_ns()
+    
+    word_combo = get_best_combo([], possible_words)
+
+    end = time.perf_counter_ns()
+
+    total_duration = end  - start
+    graph_duration = graph_complete - start
+    possible_words_duration = possible_words_complete - graph_complete
+    word_combo_duration = end - possible_words_complete
+
+    print(word_combo)
+
+    print("Total time      ", int(total_duration / 1_000_000), "ms")
+    print("Connection graph", int(graph_duration / 1_000_000), "ms")
+    print("Possible words  ", int(possible_words_duration / 1_000_000), "ms")
+    print("Word combo      ", int(word_combo_duration / 1_000_000), "ms")
+
+
+# For testing purposes
+if __name__=="__main__":
+    test_word_finder_performance()
+    
