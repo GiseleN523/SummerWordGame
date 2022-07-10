@@ -35,7 +35,8 @@ def main():
     # Initialize pygame
     pygame.init()
     pygame.display.set_caption("Our Game")
-    screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+    pygame_flags = pygame.FULLSCREEN | pygame.DOUBLEBUF
+    screen = pygame.display.set_mode((0,0), pygame_flags)
     # screen = pygame.display.set_mode((640, 360)) #test resolution
     clock = pygame.time.Clock()
 
