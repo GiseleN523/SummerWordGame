@@ -6,6 +6,7 @@ from pygame import Rect
 import math
 import random
 import time
+import itertools
 
 
 from utils import GameEvent
@@ -16,7 +17,7 @@ import Letter
 SHORTEST_ALLOWED_WORD_LENGTH = 2
 ALL_COLORS = [(255, 72, 72), (72, 255, 72), (72, 72, 255), (255, 72, 255), (72, 255, 255), (255, 72, 0)]
 
-STARTING_TIME_BETWEEN_EXPLOSIONS = 5 #20 #seconds
+STARTING_TIME_BETWEEN_EXPLOSIONS = 20 #seconds
 
 DRAG_THRESHOLD_MOD = 0.5
 
@@ -157,7 +158,8 @@ class Gameplay:
         for w in possible_words:
             possible_letters = possible_letters + w    
         
-        word_combo_as_ints = get_best_combo([], possible_words, possible_letters)
+        # word_combo_as_ints = get_best_combo([], possible_words, possible_letters)
+        word_combo_as_ints = get_combo_lock_longest(possible_words, self.letters)
 
         word_combo = []
         for word in word_combo_as_ints:
@@ -278,7 +280,7 @@ def create_letters(chars, screen_width, screen_height, letter_radius):
 
 
 
-def string_from_letter_indices(letters, indices):
+def disp(letters, indices):
     return ''.join(list(map(lambda id: letters[id].char, indices)))
 
 
@@ -315,7 +317,7 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, le
     visited.append(starting_point)
 
     # If we don't traverse the graph any further, what we have is still a string
-    snippet_base = string_from_letter_indices(letters, visited)
+    snippet_base = disp(letters, visited)
 
     if word_generator.is_valid_word(snippet_base):
         results.append(visited.copy())
@@ -345,7 +347,7 @@ def calculate_all_adjacent_strings(connection_graph, starting_point, visited, le
 
 
 
-def get_best_combo(words_in_combo, possible_words, possible_letters):
+def get_best_combo(words_in_combo, possible_words, possible_letters, letters, tab):
 
     best_combo=words_in_combo
 
@@ -355,6 +357,8 @@ def get_best_combo(words_in_combo, possible_words, possible_letters):
     # possible_letters=[]
     # for w in possible_words:
     #     possible_letters = possible_letters + w    
+
+    count_loops = 0
 
     for word in filter(lambda w: w not in words_in_combo, possible_words):
     # for word in possible_words:
@@ -371,31 +375,65 @@ def get_best_combo(words_in_combo, possible_words, possible_letters):
                 break
 
         if repeat_letter==False:
+            count_loops += 1
 
         # if not any(letter in word for letter in used_letters):
 
             # Add this word to the combo
-            # words_in_combo.append(word)
+            words_in_combo.append(word)
 
-            temp = words_in_combo.copy()
-            temp.append(word)
+            print(tab + disp(letters, word))
+            # temp = words_in_combo.copy()
+            # temp.append(word)
 
-            best_combo_this_route= get_best_combo(temp, possible_words, possible_letters)
+            new_tab = tab + "| "
 
-            # words_in_combo.pop(-1)
+            best_combo_this_route= get_best_combo(words_in_combo, possible_words, possible_letters, letters, new_tab)
+
+            print(tab + "so far", [disp(letters,w) for w in best_combo_this_route])
+
+            words_in_combo.pop()
+
+            # print(tab + "now best combo is",)
+
+            # print(tab, string_from_letter_indices(letters, word), [string_from_letter_indices(letters, word) for word in words_in_combo])
             
             best_combo_this_route_unused=len(unused_letters_in_combo(best_combo_this_route, possible_letters))
 
-
             best_combo_unused=len(unused_letters_in_combo(best_combo, possible_letters))
 
-            if best_combo_this_route_unused < best_combo_unused:
+            print(tab, best_combo_this_route_unused, best_combo_unused)
+            
+
+            this_route_str = [disp(letters, w) for w in best_combo_this_route]
+
+            normal_best_combo_str = [disp(letters, w) for w in best_combo]
+
+            if len(best_combo) == 0:
+                best_combo = best_combo_this_route
+
+                print(tab, this_route_str, "is better than", normal_best_combo_str)
+
+
+            elif best_combo_this_route_unused < best_combo_unused:
                 # If this route uses more letters, use it
                 best_combo = best_combo_this_route
+
+                print(tab + this_route_str, "is better than", normal_best_combo_str)
 
             elif best_combo_this_route_unused == best_combo_unused and len(best_combo_this_route)<len(best_combo):
                 # Otherwise if this route uses larger words, use it
                 best_combo = best_combo_this_route
+
+                print(tab + this_route_str, "is better than", normal_best_combo_str)
+
+            else:
+                print(tab + "no change", normal_best_combo_str, "is better than", this_route_str)
+
+    if count_loops == 0:
+        print(tab + "no more valid words")
+
+    # print(tab + "best combo", [disp(letters, word) for word in best_combo])
 
     return best_combo
         
@@ -447,7 +485,7 @@ def alternative_get_best_combo(all_words, letters):
 
                 extra_letters = list(set(my_word).difference(set(other_word)))
 
-                print(string_from_letter_indices(letters, my_word), "has extra letters", string_from_letter_indices(letters, extra_letters), "compared to", string_from_letter_indices(letters, other_word))
+                print(disp(letters, my_word), "has extra letters", disp(letters, extra_letters), "compared to", disp(letters, other_word))
 
                 my_word_wraps.append((other_word_id, extra_letters))
 
@@ -505,6 +543,75 @@ def alternative_get_best_combo(all_words, letters):
 
 
 
+def flat_get_best_combo(all_words, letters):
+    chosen_words = []
+    letter_quantity = 0
+
+    count = 0
+
+    for active_word_quant in range(1, len(all_words)):
+
+        for active_words in itertools.combinations(all_words, active_word_quant):
+            count += 1
+
+            # print("Trying", [disp(letters, active_word) for active_word in active_words])
+
+            letter_already_used = False
+            active_letters = [*itertools.chain.from_iterable(active_words)]
+
+
+            # active_letters = []
+            # for active_word in active_words:
+            #     active_letters.extend(active_word)
+
+            #     if len(set(active_letters)) != len(active_letters):
+            #         # aka active_letters contains duplicates
+            #         letter_already_used = True
+            #         break
+
+
+            # if not letter_already_used:
+                # print([disp(letters, w) for w in active_words])
+            #     if len(active_letters) > letter_quantity:
+            #         chosen_words = []
+            #         letter_quantity = len(active_letters)
+
+            #     elif len(active_letters) == letter_quantity:
+            #         if len(active_words) < len(chosen_words):
+            #             chosen_words = []
+            #             letter_quantity = len(active_letters)
+
+    print("Count", count)
+
+    return chosen_words
+
+
+
+def get_combo_lock_longest(all_words, letters):
+    combo = []
+    available_words = sorted(all_words, key=len)
+
+    while available_words:
+
+        # print([disp(letters, w) for w in available_words])
+
+        new_word = available_words.pop()
+        combo.append(new_word)
+
+        for i in range(len(available_words) -1, -1, -1):
+            # Loop over available words backwards
+            # because we are going to remove elements as we go
+
+            word = available_words[i]
+
+            for letter in word:
+                if letter in new_word:
+                    available_words.remove(word)
+                    break
+
+    return combo
+
+
 
 
 def test_word_finder_performance():
@@ -521,12 +628,12 @@ def test_word_finder_performance():
 
 
     letters = []
-    for i in range(0, 1):
+    for i in range(0, 3):
         word = random.choice(list(word_generator.word_map.keys()))
         print(word)
         offset = 0
         for letter in word:
-            letters.append(Letter.Letter(letter, offset, i*30, 10))
+            letters.append(Letter.Letter(letter, offset, i*2, 10))
             offset += 5
 
     # print(letters)
@@ -542,17 +649,19 @@ def test_word_finder_performance():
     possible_words = calculate_all_possible_words_from_graph(letters, connected_letters, word_generator)
 
     print("Number of possible words", len(possible_words))
-    [print(string_from_letter_indices(letters, my_str)) for my_str in possible_words]
+    # [print(disp(letters, my_str)) for my_str in possible_words]
     # [print(word) for word in possible_words]
+    print()
     
     possible_words_complete = time.perf_counter_ns()
 
 
     possible_letters=[]
     for w in possible_words:
-        possible_letters = possible_letters + w    
+        for letter in w:
+            possible_letters.append(letter)
     
-    word_combo = get_best_combo([], possible_words, possible_letters)
+    word_combo = get_combo_lock_longest(possible_words, letters)
     # word_combo = alternative_get_best_combo(possible_words, letters)
 
     end = time.perf_counter_ns()
@@ -562,7 +671,7 @@ def test_word_finder_performance():
     possible_words_duration = possible_words_complete - graph_complete
     word_combo_duration = end - possible_words_complete
 
-    print("\n", word_combo)
+    print("\n", [disp(letters, word) for word in word_combo])
 
     print("Total time      ", int(total_duration / 1_000_000), "ms")
     print("Connection graph", int(graph_duration / 1_000_000), "ms")
