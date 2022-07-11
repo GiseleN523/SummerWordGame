@@ -18,6 +18,7 @@ import end_screen
 TO DO
 -when to add words to list? each time one is formed or when timer runs out (current method)
 -should letters also need to be above letters they come before, the way they need to be to their left?
+-scoring
 -more languages
 -special abilities when you form certain words (palindromes, >5 letters, etc): choose any letter, slow down time, hint, etc
 
